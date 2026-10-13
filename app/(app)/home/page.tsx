@@ -2,13 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { partsInTz, safeTz, daysBetween, greeting } from "@/lib/dates";
-import { isReassessmentDue } from "@/lib/scoring";
 import { AREAS, type Area, type Exam } from "@/lib/types";
 import { AREA_INFO } from "@/config/areas";
 import { getResources } from "@/config/safety";
 import { Frog } from "@/components/Frog/Frog";
 import { moodFromScore } from "@/components/Frog/palette";
-import { ButtonLink } from "@/components/ui/Button";
 import { ModuleCard } from "@/components/modules/ModuleCard";
 import { MoodCheckin } from "@/components/modules/MoodCheckin";
 import { BreathingExercise } from "@/components/modules/BreathingExercise";
@@ -26,9 +24,8 @@ export default async function HomePage() {
   const now = new Date();
   const local = partsInTz(now, tz);
 
-  const [{ data: lastMood }, { data: lastAssessment }, { data: lastActivity }, { data: exams }] = await Promise.all([
+  const [{ data: lastMood }, { data: lastActivity }, { data: exams }] = await Promise.all([
     supabase.from("mood_checkins").select("mood, created_at").order("created_at", { ascending: false }).limit(1).maybeSingle(),
-    supabase.from("assessments").select("taken_at").order("taken_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("activities").select("created_at").order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("exams").select("id, subject, title, due_date").gte("due_date", local.ymd).order("due_date").limit(20),
   ]);
@@ -43,7 +40,6 @@ export default async function HomePage() {
   const lastSeen = [lastMood?.created_at, lastActivity?.created_at].filter(Boolean).map((d) => new Date(d!));
   const lastSeenAt = lastSeen.length ? new Date(Math.max(...lastSeen.map((d) => d.getTime()))) : null;
   const welcomeBack = lastSeenAt && daysBetween(lastSeenAt, now) >= 10;
-  const reassess = isReassessmentDue(lastAssessment?.taken_at ?? profile.onboarded_at);
 
   const resources = getResources(profile.country);
   const ordered: Area[] = profile.primary_area
@@ -68,7 +64,7 @@ export default async function HomePage() {
   return (
     <div className="flex flex-col gap-6">
       <section className="flex items-center gap-4" aria-labelledby="hello">
-        <Link href="/shop" aria-label="Ver y personalizar tu rana">
+        <Link href="/shop" aria-label="Ver y personalizar a Igel">
           <Frog state={profile.frog_state} mood={frogMood} size={104} withCorner label="" />
         </Link>
         <div>
@@ -89,19 +85,6 @@ export default async function HomePage() {
         </div>
       )}
 
-      {reassess && (
-        <aside className="flex items-center gap-3 rounded-3xl bg-warm p-4" aria-label="Revisión mensual">
-          <span aria-hidden className="text-3xl">🔄</span>
-          <div className="flex-1">
-            <p className="font-bold">¿Revisamos cómo estás?</p>
-            <p className="text-sm">Unas preguntas cortas para ajustar tu inicio. Cuando te apetezca.</p>
-          </div>
-          <ButtonLink href="/onboarding" variant="secondary" className="shrink-0">
-            Vale
-          </ButtonLink>
-        </aside>
-      )}
-
       <section aria-labelledby="now-h" className="flex flex-col gap-3">
         <h2 id="now-h" className="text-xl font-extrabold">
           ¿Qué te apetece ahora?
@@ -109,7 +92,7 @@ export default async function HomePage() {
         <div className="grid grid-cols-3 gap-3">
           {[
             { href: "/jarra", icon: "🫙", label: "Guardar una emoción" },
-            { href: "/chat", icon: "💬", label: "Hablar con Lagun" },
+            { href: "/chat", icon: "💬", label: "Hablar con Igel" },
             { href: "#respirar", icon: "🫧", label: "Respirar un minuto" },
           ].map((a) => (
             <Link

@@ -1,11 +1,23 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
+import { isReassessmentDue } from "@/lib/scoring";
 import { BottomNav } from "@/components/ui/BottomNav";
 import { ThemeSync } from "@/components/ui/ThemeSync";
 import { Frog } from "@/components/Frog/Frog";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
-  const { profile } = await requireProfile();
+  const { supabase, profile } = await requireProfile();
+
+  // Re-evaluación mensual OBLIGATORIA: a los 30 días se pide repetir el cuestionario.
+  // Las estadísticas históricas no se tocan. (La ayuda urgente sigue siempre accesible.)
+  const { data: last } = await supabase
+    .from("assessments")
+    .select("taken_at")
+    .order("taken_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (isReassessmentDue(last?.taken_at ?? profile.onboarded_at)) redirect("/onboarding");
   return (
     <>
       <ThemeSync theme={profile.theme} />
@@ -20,7 +32,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           <Link
             href="/shop"
             className="ml-auto inline-flex items-center gap-1 rounded-full bg-surface px-2.5 py-1 text-sm font-bold"
-            aria-label={`Tu rana y tienda. Tienes ${profile.points} hojas`}
+            aria-label={`Igel y su tienda. Tienes ${profile.points} hojas`}
           >
             <Frog state={profile.frog_state} size={26} animate={false} label="" />
             <span aria-hidden>🍃 {profile.points}</span>

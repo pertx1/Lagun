@@ -18,11 +18,13 @@ type Step = "intro" | "questions" | "support" | "done";
 export function Questionnaire({
   name,
   isReassessment,
+  mandatory,
   resources,
   frogState,
 }: {
   name: string;
   isReassessment: boolean;
+  mandatory: boolean;
   resources: CountryResources;
   frogState: FrogState;
 }) {
@@ -72,13 +74,13 @@ export function Questionnaire({
   if (step === "intro") {
     return (
       <div className="flex flex-col items-center text-center animate-fade-up">
-        <Frog size={150} mood="happy" state={frogState} label="Lagun te da la bienvenida" />
+        <Frog size={150} mood="happy" state={frogState} label="Igel te da la bienvenida" />
         <h1 ref={headingRef} tabIndex={-1} className="mt-4 text-3xl font-black">
           {isReassessment ? `¿Cómo vas, ${name}?` : `¡Hola, ${name}!`}
         </h1>
         <p className="mt-3 text-lg">
           {isReassessment
-            ? "Ha pasado un tiempo. ¿Revisamos juntos cómo estás? Así ajusto tu inicio a lo que te viene mejor ahora. Tus estadísticas se quedan tal cual."
+            ? "Ha pasado un mes. Toca la revisión mensual: unas preguntas cortas para ajustar tu inicio a lo que te viene mejor ahora. Tus estadísticas se quedan tal cual."
             : "Antes de empezar, me gustaría conocerte un poco para preparar tu rincón."}
         </p>
         <ul className="mt-4 flex flex-col gap-1 text-muted">
@@ -89,7 +91,7 @@ export function Questionnaire({
         <Button className="mt-8 w-full" onClick={() => setStep("questions")}>
           Vamos allá
         </Button>
-        {isReassessment && (
+        {isReassessment && !mandatory && (
           <Button variant="ghost" className="mt-2 w-full" onClick={() => router.push("/home")}>
             Ahora no
           </Button>
@@ -126,7 +128,7 @@ export function Questionnaire({
     const areas = (result.activeAreas ?? []) as Area[];
     return (
       <div className="flex flex-col items-center text-center animate-fade-up">
-        <Frog size={150} mood="excited" hop state={frogState} label="Lagun celebra" />
+        <Frog size={150} mood="excited" hop state={frogState} label="Igel lo celebra" />
         <h1 ref={headingRef} tabIndex={-1} className="mt-4 text-3xl font-black">
           ¡Gracias, {name}!
         </h1>

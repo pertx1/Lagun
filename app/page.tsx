@@ -11,9 +11,8 @@ export default async function Landing() {
 
   return (
     <main id="main" className="mx-auto flex w-full max-w-md flex-1 flex-col items-center px-5 pb-10 pt-20 text-center">
-      <Frog size={180} mood="happy" withCorner state={{ corner: "corner_lily" }} label="Lagun, la rana, te saluda" />
+      <Frog size={180} mood="happy" withCorner state={{ corner: "corner_lily" }} label="Igel, la rana, te saluda" />
       <h1 className="mt-4 text-4xl font-black tracking-tight text-accent">Lagun</h1>
-      <p className="text-sm font-bold text-muted">“amigo/a” en euskera</p>
       <p className="mt-4 text-lg">
         Tu rincón para cuando los estudios, la gente, la casa o lo que sientes se hace bola.
         <strong> Entra cuando quieras, sin rachas ni presión.</strong>
@@ -23,7 +22,7 @@ export default async function Landing() {
           ["🫙", "Jarra de emociones"],
           ["💬", "Alguien que te escucha"],
           ["🧘", "Respirar y calmarte"],
-          ["🐸", "Una rana que te acompaña"],
+          ["🐸", "Igel, una rana que te acompaña"],
         ].map(([icon, text]) => (
           <li key={text} className="rounded-2xl bg-surface p-3 font-bold">
             <span aria-hidden>{icon}</span> {text}

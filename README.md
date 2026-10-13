@@ -1,6 +1,6 @@
 # 🐸 Lagun
 
-**Lagun** (“amigo/a” en euskera) es una PWA de bienestar emocional para personas de **13 a 25 años**:
+**Lagun** es una PWA de bienestar emocional para personas de **13 a 25 años**:
 estrés académico, social, familiar e identidad. Se usa **cuando hace falta**, sin rachas, sin culpa y sin presión.
 
 > Lagun es una app de apoyo. **No es un producto médico** ni sustituye la atención profesional.
@@ -11,16 +11,17 @@ estrés académico, social, familiar e identidad. Se usa **cuando hace falta**, 
 
 | Área | Qué hay |
 |---|---|
+| Registro | Solo **usuario + contraseña** y una casilla de edad/permiso. Sin email ni más datos |
 | Onboarding | Cuestionario cálido de 18 ítems (escala 0-4, barra de progreso), detección de área principal + áreas activas, **cribado de seguridad C1** con pantalla de apoyo inmediata |
 | Home adaptativa | Módulos por área: **acad** (calendario de exámenes, Pomodoro, métodos de estudio), **soc** (retos amables, situaciones de práctica, habilidades, espacio para desahogarse), **fam** (constructor de “mensajes yo”, límites, conflictos, recursos), **iden** (afirmaciones, autoaceptación, organizaciones fiables). Check-in, respiración y grounding siempre disponibles |
-| Chat IA efímero | Acompañante emocional vía `lib/ai.ts` (servidor). **No se guarda nada**. Doble detección de crisis: flag `crisis` estructurado del modelo + palabras clave en servidor y cliente |
+| Chat IA efímero | Igel como acompañante emocional vía `lib/ai.ts` (servidor), con **IA gratuita (Groq)**. **No se guarda nada**. Doble detección de crisis: flag `crisis` estructurado del modelo + palabras clave en servidor y cliente |
 | Ayuda urgente | Botón **siempre visible** en todas las pantallas (funciona sin JS) + página `/ayuda` + página offline con teléfonos |
-| Rana + gamificación | Mascota SVG por capas (color, gorro, gafas, ropa, accesorio, rinconcito) con 6 estados de ánimo. Hojas 🍃 por **autocuidado**, nunca por constancia. Tienda con 27 objetos |
+| Igel + gamificación | **Igel**, la rana mascota: SVG por capas (color, gorro, gafas, ropa, accesorio, rinconcito) con 6 estados de ánimo. Hojas 🍃 por **autocuidado**, nunca por constancia. Tienda con 27 objetos |
 | Jarra de emociones | Bolas de colores que caen con animación; una jarra por mes con historial |
 | Feed | Frases, historias y consejos, filtro por área, favoritos |
 | Check-in de fin de día | Opcional; hora y días configurables. Aparece en la home y, si se activan, por push |
 | Estadísticas | Ánimo (30 días), emociones, autocuidado, evolución por revisiones mensuales, “pequeñas mejoras”. Tono alentador |
-| Re-evaluación mensual | Invitación amable a los 30 días; **nunca borra ni modifica el histórico** |
+| Re-evaluación mensual | **Obligatoria** a los 30 días (redirige al cuestionario); **nunca borra ni modifica el histórico** |
 | Privacidad | RLS en todas las tablas, descarga de datos (JSON) y borrado de cuenta en cascada, info para familias, consentimiento parental para < 14 |
 | PWA | Manifest, iconos (incl. maskable), service worker, offline, Web Push (VAPID) |
 | Accesibilidad | Contraste AA en ambos temas, foco visible, navegación por teclado, `prefers-reduced-motion`, roles ARIA, “saltar al contenido” |
@@ -28,7 +29,7 @@ estrés académico, social, familiar e identidad. Se usa **cuando hace falta**, 
 ## Stack
 
 Next.js 16 (App Router, Turbopack) · TypeScript · Tailwind CSS 4 · Supabase (Auth + Postgres + RLS) · Web Push · Vercel.
-IA: Claude (Anthropic) detrás de una interfaz `CompanionProvider` intercambiable.
+IA: **Groq** (plan gratuito) detrás de una interfaz `CompanionProvider` intercambiable (Claude disponible como alternativa de pago).
 
 ---
 
@@ -42,8 +43,10 @@ IA: Claude (Anthropic) detrás de una interfaz `CompanionProvider` intercambiabl
    - `supabase/seed.sql` (tienda y feed)
 
    O con la CLI: `supabase link` + `supabase db push` y luego el seed.
-3. **Authentication → URL Configuration**: pon tu dominio en *Site URL* y añade `https://TU-DOMINIO/auth/confirm` en *Redirect URLs* (y `http://localhost:3000/auth/confirm` para desarrollo).
-4. Recomendado: deja activada la confirmación de email.
+3. **Authentication → Sign In / Providers → Email**: deja el proveedor Email activado y **desactiva “Confirm email”**.
+   El inicio de sesión es con usuario + contraseña: internamente se crea un email técnico
+   `usuario@AUTH_EMAIL_DOMAIN` al que nunca se envía nada.
+   ⚠️ Sin email **no hay recuperación de contraseña**; avisamos de ello en el registro.
 
 ### 2. Variables de entorno
 
@@ -56,10 +59,10 @@ npx web-push generate-vapid-keys   # copia las claves a .env.local
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Cliente y servidor |
 | `SUPABASE_SERVICE_ROLE_KEY` | **Solo servidor**: cron de notificaciones y borrado de cuenta |
-| `ANTHROPIC_API_KEY`, `AI_PROVIDER`, `AI_MODEL` | **Solo servidor**: chat (`lib/ai.ts`) |
+| `GROQ_API_KEY`, `AI_PROVIDER`, `AI_MODEL` | **Solo servidor**: chat (`lib/ai.ts`). Clave gratis en [console.groq.com/keys](https://console.groq.com/keys) |
+| `AUTH_EMAIL_DOMAIN` | Dominio técnico del email interno de Supabase (no se envían correos) |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Web Push |
 | `CRON_SECRET` | Protege `/api/cron/checkin` |
-| `NEXT_PUBLIC_SITE_URL` | Enlaces de confirmación de email |
 
 ### 3. Desarrollo
 
@@ -76,8 +79,10 @@ El service worker solo se registra en producción (`npm run build && npm start`)
 ### 4. Despliegue en Vercel
 
 1. Importa el repo en Vercel y añade las variables de entorno.
-2. `vercel.json` programa `/api/cron/checkin` **cada hora** (cada persona elige su hora local).
-   ⚠️ El plan Hobby de Vercel solo permite crons diarios: usa Pro, o un programador externo que llame a la ruta con `Authorization: Bearer $CRON_SECRET`.
+2. **Cron de notificaciones** (gratis): `.github/workflows/checkin-cron.yml` llama a `/api/cron/checkin` **cada hora**
+   desde GitHub Actions (cada persona elige su hora local). Añade en GitHub → *Settings → Secrets and variables → Actions*
+   los secrets `LAGUN_URL` (p. ej. `https://lagun.vercel.app`) y `CRON_SECRET` (el mismo que en Vercel).
+   No se usa el cron de Vercel porque el plan gratuito solo permite una ejecución al día.
 3. Notificaciones en iPhone: solo funcionan con la app **instalada en la pantalla de inicio** (iOS 16.4+).
 
 ---
@@ -86,7 +91,7 @@ El service worker solo se registra en producción (`npm run build && npm start`)
 
 ```
 app/
-  (auth)/login, (auth)/register     registro con edad mínima y consentimiento parental
+  (auth)/login, (auth)/register     usuario + contraseña
   onboarding/                       cuestionario (también re-evaluación mensual)
   (app)/home | chat | jarra | feed | stats | shop | settings
   ayuda/ privacidad/ familias/      páginas públicas
@@ -94,7 +99,7 @@ app/
   api/cron/checkin/route.ts         recordatorio push del check-in
   api/account/export/route.ts       descarga de datos (RGPD)
   actions.ts                        server actions (puntos, emociones, tienda, ajustes…)
-components/Frog/                    mascota SVG por capas
+components/Frog/                    Igel, la mascota (SVG por capas)
 components/Jar/                     jarra de emociones
 components/modules/                 módulos por área y ejercicios
 components/ui/                      sistema de diseño
@@ -114,7 +119,7 @@ supabase/migrations, supabase/seed.sql
 Tablas del enunciado (`profiles`, `assessments`, `emotions`, `mood_checkins`, `activities`, `shop_items`,
 `user_inventory`, `feed_posts`, `favorites`, `exams`) + `push_subscriptions`. **El chat no tiene tabla.**
 
-Añadidos a `profiles`: `guardian_consent`, `consent_at`, `checkin_days` (frecuencia), `timezone`, `country`, `onboarded_at`.
+Cambios en `profiles`: `username` (único) en vez de email; sin `birth_date`/`is_minor` (se pidió no recoger más datos); añadidos `age_consent`, `consent_at`, `checkin_days` (frecuencia), `timezone`, `country`, `onboarded_at`.
 
 Seguridad, además de RLS `auth.uid() = user_id` en todo:
 
@@ -123,11 +128,11 @@ Seguridad, además de RLS `auth.uid() = user_id` en todo:
   - `award_points(type)`: puntos fijos por tipo de autocuidado, con tope diario anti-“farmeo” (la actividad se registra aunque dé 0).
   - `buy_item(id)`, `equip_item(category, id)`: validan saldo y propiedad.
 - `assessments`: sin `update`/`delete` → el histórico es intocable. Un trigger actualiza la home al insertar.
-- `handle_new_user`: crea el perfil y **aplica la edad mínima en la base de datos** (< 13 rechazado; 13 sin consentimiento rechazado).
+- `handle_new_user`: crea el perfil, valida el nombre de usuario y exige la casilla de edad/permiso.
 - `feed_posts` y `shop_items`: lectura pública.
 - Borrar la cuenta elimina todo en cascada.
 
-La migración se ha probado en PostgreSQL 16 con un stub del esquema `auth`: edad mínima, intentos de editar puntos/área,
+La migración se ha probado en PostgreSQL 16 con un stub del esquema `auth`: registro (usuario y casilla), intentos de editar puntos/área,
 insertar actividades o inventario, leer datos ajenos, tope diario, compra/equipamiento y borrado en cascada.
 
 ## Lógica de puntuación (`lib/scoring.ts`)
@@ -141,25 +146,23 @@ insertar actividades o inventario, leer datos ajenos, tope diario, compra/equipa
 
 ## Chat y seguridad
 
+- Proveedor por defecto: **Groq** (gratis, sin tarjeta, con límites por minuto y por día; no usa los datos de la API para entrenar). Modelo por defecto `openai/gpt-oss-120b`, cambiable con `AI_MODEL` si Groq retira o añade modelos.
 - `lib/ai.ts` solo se puede importar en el servidor (`server-only`). La API key nunca llega al cliente.
-- Respuesta estructurada `{ reply, crisis }` (JSON schema) + detección por palabras clave en servidor **y** cliente (el aviso aparece al instante, antes de que conteste la IA).
-- Si la IA falla o declina responder en un momento de riesgo, se devuelve una respuesta segura de respaldo y se muestran los recursos.
-- Se activa el *fallback* del lado del servidor de Anthropic (`fallbacks: "default"`) para que un rechazo por política se reintente con el modelo recomendado.
+- Respuesta estructurada `{ reply, crisis }` (modo JSON) + detección por palabras clave en servidor **y** cliente (el aviso aparece al instante, antes de que conteste la IA).
+- Si la IA falla (p. ej. se agota el cupo gratuito) en un momento de riesgo, se devuelve una respuesta segura de respaldo y se muestran los recursos.
 - No se registran ni se guardan mensajes; `Cache-Control: no-store`. El estado del chat vive en memoria y se limpia al salir de la pantalla, al cerrar/ocultar la página y al volver desde la bfcache.
-- Límite de ritmo básico por usuario (en memoria por instancia; para producción a escala conviene uno distribuido).
+- Límite de ritmo básico por usuario (en memoria por instancia).
 
 ---
 
-## Decisiones que he tomado (revísalas)
+## Decisiones
 
-1. **Edad y consentimiento**: mínimo 13 años. Entre 13 y 14 se pide una casilla de consentimiento de madre/padre/tutor (LOPDGDD art. 7). Una casilla **no es un consentimiento verificable**: antes de lanzar, define con asesoría legal un mecanismo real (p. ej. email al tutor/a con confirmación).
-2. **“Dentro del 15 % del máximo”** se interpreta como 15 puntos porcentuales (`ACTIVE_MARGIN` en `lib/scoring.ts`).
-3. **Re-evaluación mensual**: invitación no bloqueante en la home a los 30 días (se puede posponer), en lugar de obligar, para respetar el principio de “sin presión”.
-4. **Moneda**: “hojas 🍃”. Tope diario por tipo de actividad para evitar abusos (sin rachas ni bonus por días seguidos).
-5. **Proveedor de IA**: Claude (`claude-opus-5-5`, esfuerzo bajo para respuestas ágiles). Se puede cambiar con `AI_MODEL` o implementando otro `CompanionProvider`.
-6. **Notificaciones**: solo el recordatorio del check-in que la persona active. Nada más.
-7. **Desahogo y “mensajes yo”**: no se guardan.
-8. **Paleta de emociones**: es identidad (bolas de la jarra) y siempre va acompañada de emoji + nombre; en las estadísticas las barras usan un solo tono y la etiqueta da la identidad.
+1. **Registro mínimo**: solo usuario + contraseña y una casilla “tengo 14 años o más, o mi madre/padre/tutor/a me da permiso” (LOPDGDD art. 7). Sin fecha de nacimiento no se puede comprobar la edad: es una declaración, no un consentimiento verificable.
+2. **“Dentro del 15 % del máximo”** = 15 puntos porcentuales (`ACTIVE_MARGIN` en `lib/scoring.ts`).
+3. **Re-evaluación mensual obligatoria**: a los 30 días, al entrar se redirige al cuestionario. El botón de ayuda urgente sigue visible.
+4. **IA gratuita**: Groq. Con mucho uso se puede llegar al límite gratuito; entonces el chat responde con un mensaje amable (y los recursos si hay riesgo).
+5. **Notificaciones**: solo el recordatorio del check-in que la persona active, con cron horario en GitHub Actions.
+6. **Moneda**: “hojas 🍃”, solo por autocuidado, con tope diario por tipo (sin rachas).
 
 ## Pendiente antes de producción
 

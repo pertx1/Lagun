@@ -12,8 +12,7 @@ export default function PrivacidadPage() {
       </p>
       <h2>Qué datos guardamos</h2>
       <ul>
-        <li>Tu email y contraseña (cifrada) para tu cuenta.</li>
-        <li>Un apodo y tu fecha de nacimiento (solo para saber tu edad y aplicar las protecciones para menores).</li>
+        <li>Tu nombre de usuario y tu contraseña (cifrada). No pedimos email, nombre real ni fecha de nacimiento.</li>
         <li>Tus respuestas al cuestionario, las emociones de tu jarra, tus check-ins de ánimo, tus exámenes y tus actividades de autocuidado.</li>
         <li>Tus preferencias (tema, notificaciones, hora del check-in) y la personalización de tu rana.</li>
       </ul>
@@ -34,8 +33,8 @@ export default function PrivacidadPage() {
       </p>
       <h2>Menores de edad</h2>
       <p>
-        Lagun es para personas a partir de 13 años. Si tienes 13 años, hace falta el consentimiento de tu madre, padre o
-        tutor/a (art. 7 LOPDGDD).
+        Lagun es para personas de 13 a 25 años. Si tienes menos de 14, hace falta el permiso de tu madre, padre o
+        tutor/a (art. 7 LOPDGDD); lo confirmas al registrarte.
       </p>
       <h2>Tus derechos</h2>
       <p>

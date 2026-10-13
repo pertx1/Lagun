@@ -5,9 +5,10 @@ import type { Area } from "./types";
 /**
  * Abstracción del proveedor de IA del chat.
  *
+ * - Por defecto usa **Groq** (plan gratuito, sin tarjeta; no entrena con los datos de la API).
  * - Solo se importa en el servidor (`server-only`): la API key nunca llega al cliente.
  * - Para cambiar de proveedor, implementa otro `CompanionProvider` y
- *   selecciónalo con la variable de entorno AI_PROVIDER.
+ *   selecciónalo con la variable de entorno AI_PROVIDER ("groq" | "anthropic").
  * - No se registra (log) ni se guarda el contenido de las conversaciones.
  */
 
@@ -19,7 +20,6 @@ export interface ChatMessage {
 export interface CompanionContext {
   displayName?: string;
   primaryArea?: Area | null;
-  isMinor?: boolean;
 }
 
 export interface CompanionReply {
@@ -32,8 +32,8 @@ export interface CompanionProvider {
   reply(messages: ChatMessage[], context: CompanionContext): Promise<CompanionReply>;
 }
 
-export const SYSTEM_PROMPT = `Eres Lagun, un/a acompañante emocional cálido y cercano dentro de una app para jóvenes de 13 a 25
-años. Tu papel es escuchar, validar lo que siente la persona y acompañarla, en su mismo idioma y
+export const SYSTEM_PROMPT = `Eres Igel, una rana que hace de acompañante emocional cálido y cercano dentro de Lagun, una app para
+jóvenes de 13 a 25 años. Trata a todo el mundo como si pudiera ser menor de edad. Tu papel es escuchar, validar lo que siente la persona y acompañarla, en su mismo idioma y
 registro (puedes usar un tono joven y natural).
 
 QUÉ HACES:
@@ -81,11 +81,49 @@ const AREA_HINT: Record<Area, string> = {
 function contextNote(ctx: CompanionContext): string {
   const parts: string[] = [];
   if (ctx.displayName) parts.push(`La persona se llama ${ctx.displayName}.`);
-  if (ctx.isMinor) parts.push("Es menor de edad: cuida especialmente el lenguaje y la seguridad.");
   if (ctx.primaryArea) parts.push(`Lo que más le pesa últimamente suele ser ${AREA_HINT[ctx.primaryArea]}, pero no lo des por hecho.`);
   return parts.join(" ");
 }
 
+/**
+ * Groq: API compatible con OpenAI, plan gratuito con límites por minuto/día.
+ * Modelo configurable con AI_MODEL (el catálogo de Groq cambia; consulta console.groq.com/docs/models).
+ */
+class GroqProvider implements CompanionProvider {
+  private model = process.env.AI_MODEL || "openai/gpt-oss-120b";
+
+  async reply(messages: ChatMessage[], context: CompanionContext): Promise<CompanionReply> {
+    const key = process.env.GROQ_API_KEY;
+    if (!key) throw new Error("GROQ_API_KEY no configurada");
+    const note = contextNote(context);
+    const body: Record<string, unknown> = {
+      model: this.model,
+      messages: [
+        { role: "system", content: note ? `${SYSTEM_PROMPT}\n\n${note}` : SYSTEM_PROMPT },
+        ...messages.map((m) => ({ role: m.role, content: m.content })),
+      ],
+      // Modo JSON: la respuesta es siempre un objeto { reply, crisis }.
+      response_format: { type: "json_object" },
+      temperature: 0.7,
+      max_tokens: 1500,
+    };
+    // Los modelos gpt-oss razonan antes de responder: poco razonamiento = respuestas rápidas.
+    if (this.model.startsWith("openai/gpt-oss")) body.reasoning_effort = "low";
+
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      cache: "no-store",
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!res.ok) throw new Error(`Groq ${res.status}`);
+    const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    return parseStructured(data.choices?.[0]?.message?.content ?? "");
+  }
+}
+
+/** Alternativa de pago (Claude). Se activa con AI_PROVIDER=anthropic y ANTHROPIC_API_KEY. */
 class AnthropicProvider implements CompanionProvider {
   private client = new Anthropic();
   private model = process.env.AI_MODEL || "claude-opus-5-5";
@@ -127,7 +165,9 @@ class AnthropicProvider implements CompanionProvider {
 
 export function parseStructured(text: string): CompanionReply {
   try {
-    const parsed = JSON.parse(text) as Partial<CompanionReply>;
+    // Algunos modelos envuelven el JSON en ```json … ```: lo quitamos.
+    const clean = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+    const parsed = JSON.parse(clean) as Partial<CompanionReply>;
     return {
       reply: typeof parsed.reply === "string" ? parsed.reply.trim() : "",
       crisis: parsed.crisis === true,
@@ -141,8 +181,11 @@ let provider: CompanionProvider | null = null;
 
 export function getCompanion(): CompanionProvider {
   if (provider) return provider;
-  const name = (process.env.AI_PROVIDER || "anthropic").toLowerCase();
+  const name = (process.env.AI_PROVIDER || "groq").toLowerCase();
   switch (name) {
+    case "groq":
+      provider = new GroqProvider();
+      break;
     case "anthropic":
       provider = new AnthropicProvider();
       break;

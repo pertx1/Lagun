@@ -67,7 +67,7 @@ export function JarClient({ initial, isCurrentMonth, monthLabel }: { initial: Ja
           {HARD.includes(result.emotion) && result.intensity >= 4 && (
             <p className="rounded-2xl bg-warm p-3 text-sm">
               Parece que pesa bastante ahora mismo. ¿Te apetece{" "}
-              <Link href="/chat" className="font-bold text-accent underline">hablarlo con Lagun</Link> o{" "}
+              <Link href="/chat" className="font-bold text-accent underline">hablarlo con Igel</Link> o{" "}
               <Link href="/home#respirar" className="font-bold text-accent underline">respirar un minuto</Link>? Y si lo
               necesitas, aquí tienes <Link href="/ayuda" className="font-bold text-accent underline">ayuda</Link>.
             </p>

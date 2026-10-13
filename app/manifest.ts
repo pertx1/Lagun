@@ -21,7 +21,7 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     shortcuts: [
       { name: "Ayuda urgente", url: "/ayuda" },
-      { name: "Hablar con Lagun", url: "/chat" },
+      { name: "Hablar con Igel", url: "/chat" },
       { name: "Jarra de emociones", url: "/jarra" },
     ],
   };

@@ -18,10 +18,11 @@ create extension if not exists pgcrypto;
 -- ---------------------------------------------------------------------
 create table public.profiles (
   id                    uuid primary key references auth.users (id) on delete cascade,
+  -- Inicio de sesión con nombre de usuario (sin email ni más datos personales).
+  username              text not null unique check (username ~ '^[a-z0-9_.]{3,20}$'),
   display_name          text not null check (char_length(display_name) between 1 and 40),
-  birth_date            date not null,
-  is_minor              boolean not null,
-  guardian_consent      boolean not null default false,
+  -- Casilla del registro: "tengo 14 años o más, o mi madre/padre/tutor/a me da permiso".
+  age_consent           boolean not null,
   consent_at            timestamptz not null default now(),
   theme                 text not null default 'system' check (theme in ('light', 'dark', 'system')),
   primary_area          text check (primary_area in ('acad', 'soc', 'fam', 'iden')),
@@ -252,9 +253,8 @@ create policy "push: borrar propias" on public.push_subscriptions
 -- Funciones y triggers
 -- =====================================================================
 
--- Alta de perfil al registrarse. Aplica la edad mínima en el servidor:
---   < 13 → no se permite.
---   13 → requiere consentimiento de madre/padre/tutor (LOPDGDD art. 7: 14 años).
+-- Alta de perfil al registrarse (solo usuario + contraseña).
+-- Exige la casilla de edad/consentimiento (LOPDGDD art. 7: 14 años).
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -262,32 +262,23 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_birth   date;
-  v_age     integer;
-  v_consent boolean;
-  v_name    text;
-  v_tz      text;
+  v_username text;
+  v_consent  boolean;
+  v_tz       text;
 begin
-  v_birth   := (new.raw_user_meta_data ->> 'birth_date')::date;
-  v_consent := coalesce((new.raw_user_meta_data ->> 'guardian_consent')::boolean, false);
-  v_name    := left(coalesce(nullif(trim(new.raw_user_meta_data ->> 'display_name'), ''), 'Lagun'), 40);
-  v_tz      := coalesce(nullif(new.raw_user_meta_data ->> 'timezone', ''), 'Europe/Madrid');
+  v_username := lower(trim(new.raw_user_meta_data ->> 'username'));
+  v_consent  := coalesce((new.raw_user_meta_data ->> 'age_consent')::boolean, false);
+  v_tz       := coalesce(nullif(new.raw_user_meta_data ->> 'timezone', ''), 'Europe/Madrid');
 
-  if v_birth is null then
-    raise exception 'birth_date es obligatoria';
+  if v_username is null or v_username !~ '^[a-z0-9_.]{3,20}$' then
+    raise exception 'Nombre de usuario no válido';
+  end if;
+  if not v_consent then
+    raise exception 'Hace falta confirmar la edad o el permiso de madre, padre o tutor/a';
   end if;
 
-  v_age := extract(year from age(current_date, v_birth))::integer;
-
-  if v_age < 13 then
-    raise exception 'Lagun es para personas de 13 años en adelante';
-  end if;
-  if v_age < 14 and not v_consent then
-    raise exception 'Hace falta el consentimiento de madre, padre o tutor';
-  end if;
-
-  insert into public.profiles (id, display_name, birth_date, is_minor, guardian_consent, timezone)
-  values (new.id, v_name, v_birth, v_age < 18, v_consent, v_tz);
+  insert into public.profiles (id, username, display_name, age_consent, timezone)
+  values (new.id, v_username, v_username, v_consent, v_tz);
 
   return new;
 end;

@@ -3,7 +3,7 @@ import { requireProfile } from "@/lib/auth";
 import type { ShopItem } from "@/lib/types";
 import { ShopClient } from "./ShopClient";
 
-export const metadata: Metadata = { title: "Tu rana" };
+export const metadata: Metadata = { title: "Igel" };
 
 export default async function ShopPage() {
   const { supabase, profile } = await requireProfile();

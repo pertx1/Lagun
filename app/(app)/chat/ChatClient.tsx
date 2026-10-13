@@ -26,7 +26,7 @@ export function ChatClient({ name, resources, frogState }: { name: string; resou
   const greeting: Msg = {
     id: 0,
     role: "assistant",
-    content: `Hola, ${name} 🐸 Aquí puedes contarme lo que quieras, sin juicios. ¿Cómo estás ahora mismo?`,
+    content: `Hola, ${name} 🐸 Soy Igel. Aquí puedes contarme lo que quieras, sin juicios. ¿Cómo estás ahora mismo?`,
   };
   const [messages, setMessages] = useState<Msg[]>([greeting]);
   const [draft, setDraft] = useState("");
@@ -135,7 +135,7 @@ export function ChatClient({ name, resources, frogState }: { name: string; resou
       <div className="mb-3 flex items-start gap-3 rounded-2xl bg-surface p-3 text-sm">
         <span aria-hidden className="text-xl">🔒</span>
         <p>
-          <strong>Esta conversación no se guarda.</strong> Al salir, se borra. Lagun te escucha y acompaña, pero no es
+          <strong>Esta conversación no se guarda.</strong> Al salir, se borra. Igel te escucha y acompaña, pero no es
           psicólogo/a ni sustituye ayuda profesional.
         </p>
       </div>
@@ -149,13 +149,13 @@ export function ChatClient({ name, resources, frogState }: { name: string; resou
                 m.role === "user" ? "rounded-br-md bg-primary text-on-primary" : "rounded-bl-md bg-surface"
               }`}
             >
-              <span className="sr-only">{m.role === "user" ? "Tú: " : "Lagun: "}</span>
+              <span className="sr-only">{m.role === "user" ? "Tú: " : "Igel: "}</span>
               {m.content}
             </p>
           </li>
         ))}
         {sending && (
-          <li className="flex items-end gap-2" aria-label="Lagun está escribiendo">
+          <li className="flex items-end gap-2" aria-label="Igel está escribiendo">
             <Frog state={frogState} size={34} animate={false} mood="calm" label="" />
             <p className="rounded-3xl rounded-bl-md bg-surface px-4 py-2.5 text-muted">
               <span className="animate-pulse">escribiendo…</span>

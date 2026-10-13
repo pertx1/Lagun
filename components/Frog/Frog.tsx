@@ -16,7 +16,7 @@ interface FrogProps {
 }
 
 /**
- * Lagun, la rana. SVG por capas:
+ * Igel, la rana mascota de Lagun. SVG por capas:
  *   rinconcito → capa trasera (capa de héroe) → cuerpo → ropa → cara → gafas → gorro → accesorio
  * Cada capa se elige con `state` (asset_key de la tienda).
  */
@@ -38,7 +38,7 @@ export function Frog({
       height={size}
       role={label === "" ? undefined : "img"}
       aria-hidden={label === "" ? true : undefined}
-      aria-label={label === "" ? undefined : (label ?? "Lagun, la rana")}
+      aria-label={label === "" ? undefined : (label ?? "Igel, la rana")}
       className={className}
     >
       {withCorner && <Corner kind={state.corner} />}

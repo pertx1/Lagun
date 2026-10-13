@@ -8,10 +8,9 @@ export type Theme = "light" | "dark" | "system";
 
 export interface Profile {
   id: string;
+  username: string;
   display_name: string;
-  birth_date: string;
-  is_minor: boolean;
-  guardian_consent: boolean;
+  age_consent: boolean;
   theme: Theme;
   primary_area: Area | null;
   active_areas: Area[];

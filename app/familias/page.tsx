@@ -25,7 +25,7 @@ export default function FamiliasPage() {
       </ul>
       <h2>Privacidad de su hijo/a</h2>
       <ul>
-        <li>Se recogen los datos mínimos (apodo, fecha de nacimiento, email).</li>
+        <li>Solo se pide un nombre de usuario y una contraseña: ni email, ni nombre real, ni fecha de nacimiento.</li>
         <li>El chat no se guarda en ningún sitio.</li>
         <li>Sus datos emocionales solo son visibles para su propia cuenta.</li>
         <li>Puede descargarlos o borrarlos en cualquier momento.</li>
@@ -33,8 +33,8 @@ export default function FamiliasPage() {
       <h2>Consentimiento (menores de 14 años)</h2>
       <p>
         En España, para tratar los datos de menores de 14 años hace falta el consentimiento de quien ejerce la patria
-        potestad o tutela. Al marcar la casilla durante el registro, usted declara haber leído esta información y
-        consentir el uso de Lagun por parte de su hijo/a.
+        potestad o tutela. En el registro, la persona confirma con una casilla que tiene 14 años o más, o que cuenta
+        con ese permiso.
       </p>
       <h2>Cómo acompañar</h2>
       <p>

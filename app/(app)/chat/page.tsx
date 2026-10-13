@@ -3,7 +3,7 @@ import { requireProfile } from "@/lib/auth";
 import { getResources } from "@/config/safety";
 import { ChatClient } from "./ChatClient";
 
-export const metadata: Metadata = { title: "Hablar con Lagun" };
+export const metadata: Metadata = { title: "Hablar con Igel" };
 
 export default async function ChatPage() {
   const { profile } = await requireProfile();

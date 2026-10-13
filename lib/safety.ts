@@ -23,8 +23,8 @@ export function normalize(text: string): string {
 }
 
 /**
- * Patrones (sobre texto normalizado). Español + algo de inglés y euskera
- * frecuentes. Mantener ordenados por categoría para que sea fácil ampliar.
+ * Patrones (sobre texto normalizado). Español + algo de inglés y
+ * euskera frecuentes. Mantener ordenados por categoría para que sea fácil ampliar.
  */
 const PATTERNS: { category: CrisisCategory; re: RegExp }[] = [
   // Suicidio / no querer vivir

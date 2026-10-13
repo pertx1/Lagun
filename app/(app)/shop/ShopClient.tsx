@@ -76,7 +76,7 @@ export function ShopClient({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col items-center rounded-3xl bg-surface p-4">
-        <Frog key={hop} state={shown} size={190} withCorner hop={hop > 0} label="Tu rana con lo que llevas puesto" />
+        <Frog key={hop} state={shown} size={190} withCorner hop={hop > 0} label="Igel con lo que lleva puesto" />
         <p className="mt-2 text-lg font-black" aria-live="polite">
           🍃 {points} hojas
         </p>

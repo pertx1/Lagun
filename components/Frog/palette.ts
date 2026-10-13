@@ -16,7 +16,7 @@ export const FROG_COLORS: Record<string, FrogPalette> = {
 
 export type FrogMood = "happy" | "calm" | "sad" | "worried" | "sleepy" | "excited";
 
-/** Estado de ánimo de la rana a partir de un ánimo 0-4. */
+/** Estado de ánimo de Igel a partir de un ánimo 0-4. */
 export function moodFromScore(score: number | null | undefined): FrogMood {
   if (score === null || score === undefined) return "calm";
   if (score <= 0) return "sad";

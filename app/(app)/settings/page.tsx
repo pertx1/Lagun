@@ -47,7 +47,7 @@ export default async function SettingsPage() {
           <summary className="cursor-pointer font-bold text-danger">Borrar mi cuenta</summary>
           <form action={deleteAccount} className="mt-3 flex flex-col gap-2">
             <p className="text-sm">
-              Se borrarán para siempre tu cuenta, tu jarra, tus check-ins, tu rana y todo lo demás. No se puede deshacer.
+              Se borrarán para siempre tu cuenta, tu jarra, tus check-ins, Igel y todo lo demás. No se puede deshacer.
             </p>
             <label htmlFor="confirm" className="text-sm font-bold">
               Escribe BORRAR para confirmar

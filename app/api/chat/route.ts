@@ -55,14 +55,13 @@ export async function POST(req: Request) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, primary_area, is_minor")
+    .select("display_name, primary_area")
     .eq("id", userId)
     .single();
 
   const context: CompanionContext = {
     displayName: profile?.display_name,
     primaryArea: (profile?.primary_area as Area | null) ?? null,
-    isMinor: profile?.is_minor ?? true,
   };
 
   let reply = "";
