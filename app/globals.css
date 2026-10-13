@@ -1,0 +1,151 @@
+@import "tailwindcss";
+
+/* Tema por atributo: <html data-theme="light|dark"> */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* ------------------------------------------------------------------
+   Tokens de diseño. Turquesa + blanco (claro) / turquesa + negro (oscuro).
+   Contrastes comprobados para AA:
+     claro:  --fg/--bg 16:1 · --muted/--bg 7.4:1 · --on-primary/--primary 5.5:1 · --accent/--bg 5.5:1
+     oscuro: --fg/--bg 18:1 · --muted/--bg 9:1  · --on-primary/--primary 10:1 · --accent/--bg 11:1
+   #14B8A6 / #2DD4BF se usan como color de marca decorativo (no para texto pequeño en claro).
+   ------------------------------------------------------------------ */
+:root {
+  --bg: #ffffff;
+  --surface: #f0fdfa;
+  --surface-2: #ccfbf1;
+  --fg: #0b1f1d;
+  --muted: #3f5754;
+  --primary: #0f766e;
+  --primary-hover: #115e59;
+  --on-primary: #ffffff;
+  --accent: #0f766e;
+  --brand: #14b8a6;
+  --brand-soft: #99f6e4;
+  --line: #b5e3dc;
+  --focus: #0f766e;
+  --danger: #b91c1c;
+  --danger-soft: #fee2e2;
+  --warm: #fff7ed;
+  --shadow: 0 6px 24px -10px rgb(15 118 110 / 0.35);
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #050a0a;
+  --surface: #0d1a19;
+  --surface-2: #12302d;
+  --fg: #ecfefb;
+  --muted: #a7c4c0;
+  --primary: #2dd4bf;
+  --primary-hover: #5eead4;
+  --on-primary: #04201d;
+  --accent: #2dd4bf;
+  --brand: #2dd4bf;
+  --brand-soft: #134e4a;
+  --line: #1f3f3b;
+  --focus: #5eead4;
+  --danger: #fca5a5;
+  --danger-soft: #3b0d0d;
+  --warm: #1c1309;
+  --shadow: 0 6px 24px -10px rgb(0 0 0 / 0.8);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-on-primary: var(--on-primary);
+  --color-accent: var(--accent);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-line: var(--line);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warm: var(--warm);
+  --font-sans: var(--font-nunito), ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+  --shadow-soft: var(--shadow);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 0.75rem;
+}
+
+.sr-only-focusable:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Animaciones ---------- */
+@keyframes frog-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes frog-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+@keyframes frog-hop {
+  0%, 100% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-14px) scale(1.03, 0.97); }
+  60% { transform: translateY(0) scale(1.04, 0.95); }
+}
+@keyframes ball-drop {
+  0% { transform: translateY(var(--drop-from, -260px)); opacity: 0; }
+  10% { opacity: 1; }
+  70% { transform: translateY(0); }
+  82% { transform: translateY(-10px); }
+  100% { transform: translateY(0); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes breathe {
+  0%, 100% { transform: scale(0.65); }
+  45%, 55% { transform: scale(1); }
+}
+@keyframes float-away {
+  to { opacity: 0; transform: translateY(-80px) scale(0.9); filter: blur(4px); }
+}
+
+.animate-frog-bob { animation: frog-bob 3.2s ease-in-out infinite; }
+.animate-frog-hop { animation: frog-hop 0.7s ease-out 2; }
+.frog-eye { transform-box: fill-box; transform-origin: center; animation: frog-blink 5s infinite; }
+.animate-ball-drop { animation: ball-drop 0.9s cubic-bezier(0.3, 0.7, 0.4, 1) both; }
+.animate-fade-up { animation: fade-up 0.35s ease-out both; }
+.animate-float-away { animation: float-away 1.2s ease-in forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

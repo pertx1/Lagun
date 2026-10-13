@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sin conexión · Lagun</title>
+<style>
+  :root { --bg:#fff; --fg:#0b1f1d; --muted:#3f5754; --primary:#0f766e; --on:#fff; --surface:#f0fdfa; --danger:#b91c1c; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#050a0a; --fg:#ecfefb; --muted:#a7c4c0; --primary:#2dd4bf; --on:#04201d; --surface:#0d1a19; --danger:#fca5a5; } }
+  body { margin:0; background:var(--bg); color:var(--fg); font:17px/1.55 ui-rounded, system-ui, sans-serif; }
+  main { max-width:36rem; margin:0 auto; padding:2rem 1rem; }
+  h1 { font-size:1.6rem; margin:0 0 .5rem; }
+  p { color:var(--muted); }
+  a.call { display:block; margin:.6rem 0; padding:.9rem 1rem; border-radius:1rem; background:var(--surface); color:var(--fg); text-decoration:none; font-weight:800; border:2px solid var(--primary); }
+  a.call small { display:block; font-weight:400; color:var(--muted); }
+  a.sos { border-color:var(--danger); }
+  button { margin-top:1rem; min-height:44px; padding:.6rem 1.2rem; border:0; border-radius:1rem; background:var(--primary); color:var(--on); font-weight:800; font-size:1rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>🐸 Ahora mismo no hay conexión</h1>
+  <p>No pasa nada. Si necesitas hablar con alguien, estos teléfonos funcionan sin internet:</p>
+  <a class="call sos" href="tel:112">🚨 112 · Emergencias<small>Si estás en peligro ahora mismo.</small></a>
+  <a class="call" href="tel:024">📞 024 · Atención a la conducta suicida<small>Gratuito, confidencial, 24 h.</small></a>
+  <a class="call" href="tel:900202010">📞 900 20 20 10 · Fundación ANAR<small>Para niños/as y adolescentes. 24 h.</small></a>
+  <a class="call" href="tel:717003717">📞 717 003 717 · Teléfono de la Esperanza<small>Escucha y apoyo emocional.</small></a>
+  <p>Mientras tanto: inspira contando 4, aguanta 4, suelta en 6. Repite unas veces. 💚</p>
+  <button onclick="location.reload()">Reintentar</button>
+</main>
+</body>
+</html>
