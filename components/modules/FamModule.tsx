@@ -1,9 +1,7 @@
 import { ModuleCard, TipList } from "./ModuleCard";
 import { IMessageBuilder } from "./IMessageBuilder";
-import type { CountryResources } from "@/config/safety";
 
-export function FamModule({ resources }: { resources: CountryResources }) {
-  const youth = resources.crisis.find((r) => r.youth);
+export function FamModule() {
   return (
     <div className="flex flex-col gap-4">
       <ModuleCard emoji="💬" title="Comunicación en casa" subtitle="Hablar desde lo que sientes, no desde el reproche.">
@@ -40,25 +38,10 @@ export function FamModule({ resources }: { resources: CountryResources }) {
         />
       </ModuleCard>
 
-      <ModuleCard emoji="📞" title="Recursos">
-        <p className="text-sm">
-          Si en casa pasa algo que te hace daño o te da miedo, no es culpa tuya y mereces ayuda.
-          {youth && (
-            <>
-              {" "}
-              <strong>{youth.name}</strong>: {youth.description}{" "}
-              {youth.phone && (
-                <a href={`tel:${youth.phone}`} className="font-bold text-accent underline">
-                  Llamar
-                </a>
-              )}
-            </>
-          )}
-        </p>
-        <p className="text-sm">
-          También puedes hablar con el/la orientador/a de tu centro. Y si estás en peligro, llama al {resources.emergency.phone}.
-        </p>
-      </ModuleCard>
+      <p className="rounded-2xl bg-surface p-4 text-sm">
+        Si en casa pasa algo que te hace daño o te da miedo, no es culpa tuya y mereces ayuda. Puedes hablar con el/la
+        orientador/a de tu centro, y en el botón <strong>Ayuda</strong> tienes a quién llamar.
+      </p>
     </div>
   );
 }

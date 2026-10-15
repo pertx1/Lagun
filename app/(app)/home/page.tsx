@@ -55,7 +55,7 @@ export default async function HomePage() {
       case "soc":
         return <SocModule />;
       case "fam":
-        return <FamModule resources={resources} />;
+        return <FamModule />;
       case "iden":
         return <IdenModule resources={resources} />;
     }

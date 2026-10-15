@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { CountryResources, HelpResource } from "@/config/safety";
 
 function ResourceItem({ r, strong = false }: { r: HelpResource; strong?: boolean }) {
@@ -37,7 +38,38 @@ function formatPhone(p: string) {
   return p;
 }
 
-export function HelpResources({ resources, showIdentity = false }: { resources: CountryResources; showIdentity?: boolean }) {
+/**
+ * Recursos de ayuda.
+ * - `compact`: solo lo esencial (una línea para hablar con alguien + emergencias) y enlace a /ayuda.
+ * - completo: la lista entera (solo en la página de Ayuda).
+ */
+export function HelpResources({
+  resources,
+  showIdentity = false,
+  compact = false,
+}: {
+  resources: CountryResources;
+  showIdentity?: boolean;
+  compact?: boolean;
+}) {
+  if (compact) {
+    const main = resources.crisis[0];
+    return (
+      <div className="flex flex-col gap-3">
+        {main && <ResourceItem r={main} strong />}
+        <p className="text-sm">
+          Si estás en peligro ahora mismo, llama al{" "}
+          <a href={`tel:${resources.emergency.phone}`} className="font-extrabold text-danger underline">
+            {resources.emergency.phone}
+          </a>
+          .{" "}
+          <Link href="/ayuda" className="font-bold text-accent underline">
+            Más recursos
+          </Link>
+        </p>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col gap-6">
       <div className="rounded-3xl border-2 border-danger bg-danger-soft p-4">
@@ -63,29 +95,25 @@ export function HelpResources({ resources, showIdentity = false }: { resources: 
       </section>
 
       {resources.support.length > 0 && (
-        <section aria-labelledby="support-h">
-          <h2 id="support-h" className="mb-2 text-lg font-extrabold">
-            Otros apoyos
-          </h2>
-          <ul className="flex flex-col gap-3">
+        <details className="rounded-2xl border border-line p-3">
+          <summary className="cursor-pointer text-lg font-extrabold">Otros apoyos</summary>
+          <ul className="mt-3 flex flex-col gap-3">
             {resources.support.map((r) => (
               <ResourceItem key={r.name} r={r} />
             ))}
           </ul>
-        </section>
+        </details>
       )}
 
       {showIdentity && resources.identity.length > 0 && (
-        <section aria-labelledby="iden-h">
-          <h2 id="iden-h" className="mb-2 text-lg font-extrabold">
-            Identidad y diversidad
-          </h2>
-          <ul className="flex flex-col gap-3">
+        <details className="rounded-2xl border border-line p-3">
+          <summary className="cursor-pointer text-lg font-extrabold">Identidad y diversidad</summary>
+          <ul className="mt-3 flex flex-col gap-3">
             {resources.identity.map((r) => (
               <ResourceItem key={r.name} r={r} />
             ))}
           </ul>
-        </section>
+        </details>
       )}
     </div>
   );

@@ -150,7 +150,7 @@ export function Questionnaire({
     title = "No estás solo/a";
     subtitle =
       "Hay personas preparadas para escucharte ahora mismo, gratis y sin juzgarte. Llamar o escribir puede ayudar más de lo que parece.";
-    body = <HelpResources resources={resources} />;
+    body = <HelpResources resources={resources} compact />;
     cta = "Seguir con Lagun";
   } else if (step.kind === "intro") {
     bubble = `¡Hola de nuevo, ${displayName}! Ha pasado un mes. ¿Vemos cómo estás ahora?`;

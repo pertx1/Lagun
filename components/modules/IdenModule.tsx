@@ -36,12 +36,11 @@ export function IdenModule({ resources }: { resources: CountryResources }) {
       {resources.identity.length > 0 && (
         <ModuleCard emoji="🫂" title="Organizaciones de confianza" subtitle="Personas que entienden lo que vives.">
           <ul className="flex flex-col gap-2">
-            {resources.identity.map((r) => (
+            {resources.identity.filter((r) => r.url).map((r) => (
               <li key={r.name} className="rounded-2xl bg-bg p-3">
                 <p className="font-bold">{r.name}</p>
                 <p className="text-sm text-muted">{r.description}</p>
                 <div className="mt-1 flex gap-3 text-sm font-bold">
-                  {r.phone && <a href={`tel:${r.phone}`} className="text-accent underline">Llamar al {r.phone}</a>}
                   {r.url && (
                     <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-accent underline">
                       Web<span className="sr-only"> (se abre en otra pestaña)</span>

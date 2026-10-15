@@ -31,11 +31,11 @@ export function CrisisSheet({ open, onClose, resources }: { open: boolean; onClo
         Estoy aquí contigo 💚
       </h2>
       <p className="mt-2">
-        Lo que me cuentas es importante y mereces apoyo de una persona de verdad. Estas líneas son gratuitas,
-        confidenciales y te atienden personas preparadas para escucharte, sin juzgarte.
+        Lo que me cuentas es importante y mereces apoyo de una persona de verdad. Esta línea es gratuita,
+        confidencial y te atiende alguien preparado para escucharte, sin juzgarte.
       </p>
       <p className="mb-4 mt-2 text-sm text-muted">Si puedes, díselo también a alguien de confianza que tengas cerca.</p>
-      <HelpResources resources={resources} />
+      <HelpResources resources={resources} compact />
       <Button variant="secondary" className="mt-5 w-full" onClick={onClose} autoFocus>
         Volver a la conversación
       </Button>
