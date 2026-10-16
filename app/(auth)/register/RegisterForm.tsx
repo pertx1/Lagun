@@ -5,8 +5,10 @@ import { useActionState, useEffect, useRef } from "react";
 import { register, type FormState } from "../actions";
 import { Field, FormMessage } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { useI18n } from "@/lib/i18n/client";
 
 export function RegisterForm() {
+  const { t } = useI18n();
   const [state, action, pending] = useActionState<FormState, FormData>(register, {});
   const tzRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -19,8 +21,8 @@ export function RegisterForm() {
       <Field
         id="username"
         name="username"
-        label="Nombre de usuario"
-        hint="De 3 a 20 caracteres: letras, números, punto o guion bajo. No uses tu nombre real si no quieres."
+        label={t.auth.usernameLabel}
+        hint={t.auth.usernameHint}
         minLength={3}
         maxLength={20}
         pattern="[A-Za-z0-9_.]{3,20}"
@@ -33,8 +35,8 @@ export function RegisterForm() {
         id="password"
         name="password"
         type="password"
-        label="Contraseña"
-        hint="Mínimo 8 caracteres. Apúntala bien: sin email no se puede recuperar."
+        label={t.auth.password}
+        hint={t.auth.passwordHint}
         minLength={8}
         autoComplete="new-password"
         required
@@ -43,17 +45,17 @@ export function RegisterForm() {
       <label className="flex items-start gap-3 text-sm">
         <input type="checkbox" name="age_consent" className="mt-1 size-5 accent-[var(--primary)]" required />
         <span>
-          Tengo 14 años o más, o mi madre, padre o tutor/a me da permiso. He leído la{" "}
+          {t.auth.consentA}{" "}
           <Link href="/privacidad" target="_blank" className="font-bold text-accent underline">
-            política de privacidad
+            {t.auth.consentLink}
           </Link>{" "}
-          y entiendo que Lagun es una app de apoyo, no un servicio médico.
+          {t.auth.consentB}
         </span>
       </label>
 
       <FormMessage error={state.error} />
       <Button type="submit" disabled={pending}>
-        {pending ? "Creando tu cuenta…" : "Crear cuenta"}
+        {pending ? t.auth.creating : t.auth.create}
       </Button>
     </form>
   );

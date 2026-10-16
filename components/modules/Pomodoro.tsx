@@ -4,14 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import { awardActivity } from "@/app/actions";
 import { Button } from "@/components/ui/Button";
 import { PointsToast } from "./PointsToast";
+import { useI18n } from "@/lib/i18n/client";
 
 const MODES = {
-  focus: { label: "Foco", minutes: 25 },
-  short: { label: "Descanso", minutes: 5 },
+  focus: { label: "focus", minutes: 25 },
+  short: { label: "rest", minutes: 5 },
 } as const;
 type Mode = keyof typeof MODES;
 
 export function Pomodoro() {
+  const { t, f } = useI18n();
   const [mode, setMode] = useState<Mode>("focus");
   const [left, setLeft] = useState(MODES.focus.minutes * 60);
   const [running, setRunning] = useState(false);
@@ -57,7 +59,7 @@ export function Pomodoro() {
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div role="tablist" aria-label="Modo" className="flex gap-2">
+      <div role="tablist" aria-label={t.pomodoro.modeAria} className="flex gap-2">
         {(Object.keys(MODES) as Mode[]).map((m) => (
           <button
             key={m}
@@ -66,7 +68,7 @@ export function Pomodoro() {
             onClick={() => switchMode(m)}
             className={`rounded-full px-4 py-1.5 text-sm font-bold ${mode === m ? "bg-primary text-on-primary" : "bg-bg text-muted"}`}
           >
-            {MODES[m].label} {MODES[m].minutes}′
+            {t.pomodoro[MODES[m].label]} {MODES[m].minutes}′
           </button>
         ))}
       </div>
@@ -74,15 +76,15 @@ export function Pomodoro() {
         {mm}:{ss}
       </p>
       <p className="sr-only" aria-live="polite">
-        {running ? "" : `${MODES[mode].label}: quedan ${Math.ceil(left / 60)} minutos`}
+        {running ? "" : f(t.pomodoro.left, { mode: t.pomodoro[MODES[mode].label], n: Math.ceil(left / 60) })}
       </p>
       <div className="flex gap-2">
-        <Button onClick={toggle}>{running ? "Pausa" : "Empezar"}</Button>
+        <Button onClick={toggle}>{running ? t.pomodoro.pause : t.pomodoro.start}</Button>
         <Button variant="secondary" onClick={() => switchMode(mode)}>
-          Reiniciar
+          {t.pomodoro.reset}
         </Button>
       </div>
-      <PointsToast points={points} text="¡Ronda de foco completada! Ahora toca descansar." />
+      <PointsToast points={points} text={t.pomodoro.done} />
     </div>
   );
 }

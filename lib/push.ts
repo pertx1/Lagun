@@ -41,11 +41,3 @@ export async function sendPush(sub: StoredSubscription, payload: PushPayload): P
     return status === 404 || status === 410 ? "gone" : "error";
   }
 }
-
-/** Mensajes suaves, sin presión ni culpa. */
-export const CHECKIN_MESSAGES = [
-  "¿Qué tal ha ido el día? Si te apetece, cuéntamelo. 🐸",
-  "Hola 🌙 Si quieres, paramos un momento a ver cómo estás.",
-  "Un minutito para ti, si te viene bien. ¿Cómo ha ido hoy?",
-  "Aquí sigo. Si te apetece contarme tu día, te escucho. 💚",
-];

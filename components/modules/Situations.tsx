@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useI18n } from "@/lib/i18n/client";
 
 export interface Situation {
   prompt: string;
@@ -9,13 +10,14 @@ export interface Situation {
 
 /** Situaciones de ejemplo con varias respuestas posibles y una reflexión amable para cada una. */
 export function Situations({ items }: { items: Situation[] }) {
+  const { t } = useI18n();
   const [i, setI] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const s = items[i];
   return (
     <div className="flex flex-col gap-3">
       <p className="rounded-2xl bg-bg p-4 font-bold">{s.prompt}</p>
-      <div className="flex flex-col gap-2" role="group" aria-label="Posibles respuestas">
+      <div className="flex flex-col gap-2" role="group" aria-label={t.soc.answersAria}>
         {s.options.map((o, j) => (
           <button
             key={o.text}
@@ -44,7 +46,7 @@ export function Situations({ items }: { items: Situation[] }) {
           setPicked(null);
         }}
       >
-        Otra situación →
+        {t.soc.anotherSituation}
       </button>
     </div>
   );

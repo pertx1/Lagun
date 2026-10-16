@@ -5,9 +5,12 @@ import { awardActivity } from "@/app/actions";
 import { inputClass } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { PointsToast } from "./PointsToast";
+import { useI18n } from "@/lib/i18n/client";
 
 /** Ayuda a construir un "mensaje yo" para hablar en casa sin atacar. No se guarda. */
 export function IMessageBuilder() {
+  const { t, f } = useI18n();
+  const m = t.fam;
   const [feel, setFeel] = useState("");
   const [when, setWhen] = useState("");
   const [need, setNeed] = useState("");
@@ -16,26 +19,29 @@ export function IMessageBuilder() {
 
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor="im-feel" className="text-sm font-bold">Me siento…</label>
-      <input id="im-feel" value={feel} onChange={(e) => setFeel(e.target.value)} placeholder="triste, agobiado/a, ignorado/a…" className={inputClass} />
-      <label htmlFor="im-when" className="text-sm font-bold">cuando…</label>
-      <input id="im-when" value={when} onChange={(e) => setWhen(e.target.value)} placeholder="discutimos en la cena" className={inputClass} />
-      <label htmlFor="im-need" className="text-sm font-bold">y me ayudaría que…</label>
-      <input id="im-need" value={need} onChange={(e) => setNeed(e.target.value)} placeholder="habláramos con más calma" className={inputClass} />
+      <label htmlFor="im-feel" className="text-sm font-bold">{m.feel}</label>
+      <input id="im-feel" value={feel} onChange={(e) => setFeel(e.target.value)} placeholder={m.feelPh} className={inputClass} />
+      <label htmlFor="im-when" className="text-sm font-bold">{m.when}</label>
+      <input id="im-when" value={when} onChange={(e) => setWhen(e.target.value)} placeholder={m.whenPh} className={inputClass} />
+      <label htmlFor="im-need" className="text-sm font-bold">{m.need}</label>
+      <input id="im-need" value={need} onChange={(e) => setNeed(e.target.value)} placeholder={m.needPh} className={inputClass} />
       {ready && (
         <div className="mt-2 rounded-2xl bg-bg p-4" aria-live="polite">
-          <p className="text-sm text-muted">Tu mensaje:</p>
+          <p className="text-sm text-muted">{m.yourMessage}</p>
           <p className="text-lg font-bold">
-            “Me siento {feel.trim()} cuando {when.trim()}
-            {need.trim() ? `, y me ayudaría que ${need.trim()}` : ""}.”
+            {f(m.message, {
+              feel: feel.trim(),
+              when: when.trim(),
+              need: need.trim() ? f(m.needPart, { need: need.trim() }) : "",
+            })}
           </p>
           <Button variant="secondary" className="mt-3" onClick={() => awardActivity("module").then(setPoints)}>
-            Me lo guardo en la cabeza
+            {m.keep}
           </Button>
         </div>
       )}
-      <PointsToast points={points} text="Comunicar lo que sientes es valiente." />
-      <p className="text-xs text-muted">No se guarda nada de lo que escribes aquí.</p>
+      <PointsToast points={points} text={m.done} />
+      <p className="text-xs text-muted">{m.notSaved}</p>
     </div>
   );
 }

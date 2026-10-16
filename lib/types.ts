@@ -12,6 +12,7 @@ export interface Profile {
   display_name: string;
   age_consent: boolean;
   theme: Theme;
+  locale?: string;
   primary_area: Area | null;
   active_areas: Area[];
   frog_state: FrogState;

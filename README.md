@@ -11,6 +11,7 @@ estrés académico, social, familiar e identidad. Se usa **cuando hace falta**, 
 
 | Área | Qué hay |
 |---|---|
+| Idiomas | **Castellano, català, euskara, galego y English**. Se elige en el primer paso del onboarding (y en Ajustes o en la portada). La IA responde en tu idioma; detección de crisis, feed, tienda, recursos de ayuda y notificaciones, traducidos |
 | Registro | Solo **usuario + contraseña** y una casilla de edad/permiso. Sin email ni más datos |
 | Onboarding | Cuestionario cálido de 18 ítems (escala 0-4, barra de progreso), detección de área principal + áreas activas, **cribado de seguridad C1** con pantalla de apoyo inmediata |
 | Home adaptativa | Módulos por área: **acad** (calendario de exámenes, Pomodoro, métodos de estudio), **soc** (retos amables, situaciones de práctica, habilidades, espacio para desahogarse), **fam** (constructor de “mensajes yo”, límites, conflictos, recursos), **iden** (afirmaciones, autoaceptación, organizaciones fiables). Check-in, respiración y grounding siempre disponibles |
@@ -41,6 +42,7 @@ IA: **Groq** (plan gratuito) detrás de una interfaz `CompanionProvider` interca
 2. En el **SQL Editor**, ejecuta en orden:
    - `supabase/migrations/0001_schema.sql` (tablas, RLS, policies, triggers y funciones)
    - `supabase/seed.sql` (tienda y feed)
+   - `supabase/migrations/0002_idiomas.sql` (idiomas + feed traducido). **Una sola vez**: si se repite, duplica los posts del feed.
 
    O con la CLI: `supabase link` + `supabase db push` y luego el seed.
 3. **Authentication → Sign In / Providers → Email**: deja el proveedor Email activado y **desactiva “Confirm email”**.
@@ -154,6 +156,14 @@ insertar actividades o inventario, leer datos ajenos, tope diario, compra/equipa
 - Límite de ritmo básico por usuario (en memoria por instancia).
 
 ---
+
+## Idiomas
+
+- Diccionarios en `lib/i18n/dict/` (`es` es la base; el resto tiene el mismo tipo, así que TypeScript avisa si falta una frase).
+- Idioma de la petición: perfil → cookie `lagun-locale` → idioma del navegador → castellano (`lib/i18n/server.ts`).
+- En el cliente: `useI18n()`; en el servidor: `await getI18n()`.
+- Recursos de ayuda traducidos en `config/safety.ts`; palabras clave de crisis en los 5 idiomas en `lib/safety.ts`.
+- ⚠️ Las traducciones (sobre todo euskera y gallego) conviene que las revise una persona nativa antes de publicar, igual que las palabras clave de crisis.
 
 ## Decisiones
 

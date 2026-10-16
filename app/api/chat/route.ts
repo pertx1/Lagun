@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCompanion, sanitizeHistory, type CompanionContext } from "@/lib/ai";
-import { CRISIS_FALLBACK_REPLY, detectCrisis } from "@/lib/safety";
+import { detectCrisis } from "@/lib/safety";
+import { getI18n } from "@/lib/i18n/server";
+import { AI_LANGUAGE } from "@/lib/i18n/config";
+import { es } from "@/lib/i18n/dict/es";
 import type { Area } from "@/lib/types";
 import { describeUser, isChatTopic, type ChatTopic } from "@/lib/companion-knowledge";
 import { EMOTION_BY_KEY, type EmotionKey } from "@/config/emotions";
@@ -47,13 +50,14 @@ export async function POST(req: Request) {
 
   // Red de seguridad por palabras clave (independiente del modelo).
   const keyword = detectCrisis(lastUser.content);
+  const { t, locale } = await getI18n();
 
   if (rateLimited(userId)) {
     return NextResponse.json(
       {
         reply: keyword.crisis
-          ? CRISIS_FALLBACK_REPLY
-          : "Vamos un poquito más despacio, que me cuesta seguirte. Espera unos segundos y seguimos. 🐸",
+          ? t.chat.crisisFallback
+          : t.chat.rateLimit,
         crisis: keyword.crisis,
       },
       { headers: NO_STORE },
@@ -76,12 +80,19 @@ export async function POST(req: Request) {
     topic === "acad" || topic === "general"
       ? supabase.from("exams").select("title, due_date").gte("due_date", today).order("due_date").limit(5)
       : Promise.resolve({ data: [] as { title: string; due_date: string }[] }),
+    // Contenido de Lagun del tema (en castellano: es conocimiento para la IA, que responde en tu idioma).
     supabase
       .from("feed_posts")
       .select("type, title, body")
       .eq("area", topic)
       .in("type", ["consejo", "historia"])
-      .limit(8),
+      .eq("lang", "es")
+      .limit(8)
+      .then((r) =>
+        r.error
+          ? supabase.from("feed_posts").select("type, title, body").eq("area", topic).in("type", ["consejo", "historia"]).limit(8)
+          : r,
+      ),
     // Calendario × ánimo/emociones: en Estudios y en la conversación general.
     topic === "acad" || topic === "general" ? loadStudyPatterns(supabase, tz) : Promise.resolve(null),
   ]);
@@ -94,7 +105,7 @@ export async function POST(req: Request) {
     topEmotions7d: [...emotionCounts.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
-      .map(([k]) => EMOTION_BY_KEY[k as EmotionKey]?.label.toLowerCase() ?? k),
+      .map(([k]) => (EMOTION_BY_KEY[k as EmotionKey] ? es.emotions[k as EmotionKey].toLowerCase() : k)),
     upcomingExams: (exams ?? [])
       .map((e) => ({ title: e.title as string, inDays: daysUntil(e.due_date as string, today) }))
       .filter((e) => e.inDays <= 14),
@@ -110,6 +121,7 @@ export async function POST(req: Request) {
       .filter(Boolean)
       .join("\n\n"),
     appContent,
+    language: AI_LANGUAGE[locale],
   };
 
   let reply = "";
@@ -126,8 +138,8 @@ export async function POST(req: Request) {
   const crisis = modelCrisis || keyword.crisis;
   if (!reply) {
     reply = crisis
-      ? CRISIS_FALLBACK_REPLY
-      : "Perdona, ahora mismo me he quedado sin palabras (algo ha fallado por mi lado). ¿Me lo vuelves a contar en un momento?";
+      ? t.chat.crisisFallback
+      : t.chat.failed;
   }
 
   return NextResponse.json({ reply, crisis }, { headers: NO_STORE });

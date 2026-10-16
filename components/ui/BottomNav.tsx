@@ -2,25 +2,25 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
-const ITEMS = [
-  { href: "/home", label: "Inicio", icon: "🏠" },
-  { href: "/area/acad", label: "Estudios", icon: "📚" },
-  { href: "/area/soc", label: "Social", icon: "🫶" },
-  { href: "/area/fam", label: "Familia", icon: "🏡" },
-  { href: "/area/iden", label: "Identidad", icon: "🌈" },
-];
+import { useI18n } from "@/lib/i18n/client";
+import { AREA_EMOJI } from "@/config/areas";
+import { AREAS } from "@/lib/types";
 
 export function BottomNav() {
   const path = usePathname();
+  const { t } = useI18n();
+  const items = [
+    { href: "/home", label: t.nav.home, icon: "🏠" },
+    ...AREAS.map((a) => ({ href: `/area/${a}`, label: t.areas[a].short, icon: AREA_EMOJI[a] })),
+  ];
   return (
     <nav
-      aria-label="Navegación principal"
+      aria-label={t.nav.main}
       className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/95 backdrop-blur"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <ul className="mx-auto grid max-w-xl grid-cols-5">
-        {ITEMS.map((it) => {
+        {items.map((it) => {
           const active = path === it.href || path.startsWith(it.href + "/");
           return (
             <li key={it.href}>
@@ -34,7 +34,7 @@ export function BottomNav() {
                 <span aria-hidden className={`text-xl transition-transform ${active ? "scale-110" : ""}`}>
                   {it.icon}
                 </span>
-                {it.label}
+                <span className="max-w-full truncate px-0.5">{it.label}</span>
               </Link>
             </li>
           );

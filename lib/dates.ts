@@ -39,9 +39,10 @@ export function daysUntil(dueYmd: string, todayYmd: string) {
   return Math.round((d - t) / 86_400_000);
 }
 
-export function greeting(hour: number) {
-  if (hour < 6) return "Hola, noctámbulo/a";
-  if (hour < 13) return "Buenos días";
-  if (hour < 21) return "Buenas tardes";
-  return "Buenas noches";
+/** Franja del día para el saludo (el texto está en t.home.greeting). */
+export function dayPart(hour: number): "night" | "morning" | "afternoon" | "evening" {
+  if (hour < 6) return "night";
+  if (hour < 13) return "morning";
+  if (hour < 21) return "afternoon";
+  return "evening";
 }

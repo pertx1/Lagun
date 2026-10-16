@@ -32,3 +32,31 @@ describe("detectCrisis", () => {
     expect(normalize("¡Ojalá NO despertar!")).toBe("ojala no despertar");
   });
 });
+
+describe("detectCrisis en otros idiomas", () => {
+  it.each([
+    ["ca", "Em vull morir, no puc més"],
+    ["ca", "a vegades penso en fer-me mal"],
+    ["ca", "no val la pena viure"],
+    ["gl", "Quero morrer"],
+    ["gl", "non quero vivir así"],
+    ["gl", "fágome dano cando estou mal"],
+    ["eu", "Hil nahi dut"],
+    ["eu", "ez dut bizi nahi"],
+    ["eu", "bere buruaz beste egiteko gogoa"],
+    ["en", "I don't want to live anymore"],
+    ["en", "sometimes I hurt myself"],
+    ["en", "I'm not safe at home"],
+  ])("detecta (%s): %s", (_, t) => {
+    expect(detectCrisis(t).crisis).toBe(true);
+  });
+
+  it.each([
+    "Avui estic cansat dels exàmens",
+    "Hoxe estou un pouco triste",
+    "Gaur oso nekatuta nago",
+    "This exam is killing me lol",
+  ])("no salta con: %s", (t) => {
+    expect(detectCrisis(t).crisis).toBe(false);
+  });
+});

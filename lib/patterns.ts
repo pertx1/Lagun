@@ -1,4 +1,6 @@
 import { EMOTION_BY_KEY, type EmotionKey } from "@/config/emotions";
+import { es, type Dict } from "@/lib/i18n/dict/es";
+import { fmt } from "@/lib/i18n/config";
 import { daysUntil, partsInTz } from "./dates";
 
 /**
@@ -51,8 +53,7 @@ function isExamPeriod(day: string, examDays: string[]) {
 }
 
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
-const MOOD_WORDS = ["muy bajo", "bajo", "regular", "bueno", "muy bueno"];
-const moodWord = (m: number) => MOOD_WORDS[Math.max(0, Math.min(4, Math.round(m)))];
+const moodWord = (m: number, words: string[] = es.patterns.moodWords) => words[Math.max(0, Math.min(4, Math.round(m)))];
 
 export function analyzeStudyPatterns(input: {
   items: CalendarItem[];
@@ -60,8 +61,12 @@ export function analyzeStudyPatterns(input: {
   emotions: EmotionRow[];
   timeZone: string;
   now?: Date;
+  /** Diccionario del idioma de la persona (para las frases). Por defecto, castellano. */
+  t?: Dict;
 }): StudyPatterns {
   const { items, moods, emotions, timeZone } = input;
+  const t = input.t ?? es;
+  const tp = t.patterns;
   const today = partsInTz(input.now ?? new Date(), timeZone).ymd;
   const examDays = items.map((i) => i.due_date);
   const dayOf = (iso: string) => partsInTz(new Date(iso), timeZone).ymd;
@@ -104,7 +109,7 @@ export function analyzeStudyPatterns(input: {
       const examShare = n / examTotal;
       const otherShare = (otherCount.get(key) ?? 0) / otherTotal;
       if (n >= MIN_SAMPLES && examShare >= otherShare + 0.15) {
-        examEmotions.push({ key: def.key, label: def.label.toLowerCase(), examShare, otherShare });
+        examEmotions.push({ key: def.key, label: t.emotions[def.key].toLowerCase(), examShare, otherShare });
       }
     }
     examEmotions.sort((a, b) => b.examShare - b.otherShare - (a.examShare - a.otherShare));
@@ -114,19 +119,16 @@ export function analyzeStudyPatterns(input: {
   const insights: string[] = [];
   if (examMood !== null && otherMood !== null) {
     if (otherMood - examMood >= 0.5)
-      insights.push(
-        `Los días antes de un examen tu ánimo suele bajar (de ${moodWord(otherMood)} a ${moodWord(examMood)}). Es muy normal: tenlo en cuenta para cuidarte esos días.`,
-      );
-    else if (examMood - otherMood >= 0.5)
-      insights.push("En época de exámenes tu ánimo incluso aguanta mejor que otros días. ¡Eso dice mucho de cómo te organizas!");
-    else insights.push("Tu ánimo se mantiene parecido haya exámenes o no. Bien llevado.");
+      insights.push(fmt(tp.moodDrop, { from: moodWord(otherMood, tp.moodWords), to: moodWord(examMood, tp.moodWords) }));
+    else if (examMood - otherMood >= 0.5) insights.push(tp.moodBetter);
+    else insights.push(tp.moodSame);
   }
   if (examEmotions.length) {
     const names = examEmotions.slice(0, 2).map((e) => e.label);
-    insights.push(`Cuando se acercan exámenes guardas más ${names.join(" y ")} en tu jarra.`);
+    insights.push(fmt(tp.emotions, { names: names.join(` ${tp.and} `) }));
   }
   if (load === "cargada")
-    insights.push(`Esta semana viene cargada: ${upcoming7} exámenes o entregas en 7 días. Ve paso a paso, no hace falta hacerlo todo hoy.`);
+    insights.push(fmt(tp.busy, { n: upcoming7 }));
 
   return { upcoming7, upcoming14, load, next: future[0] ?? null, examMood, otherMood, examEmotions, insights };
 }
@@ -143,7 +145,7 @@ export function describePatternsForAI(p: StudyPatterns): string {
       `Patrón observado en sus registros: en los ${EXAM_WINDOW_DAYS} días antes de un examen su ánimo medio es ${moodWord(p.examMood)} frente a ${moodWord(p.otherMood)} el resto de días.`,
     );
   if (p.examEmotions.length)
-    out.push(`En época de exámenes registra más: ${p.examEmotions.map((e) => e.label).join(", ")}.`);
+    out.push(`En época de exámenes registra más: ${p.examEmotions.map((e) => es.emotions[e.key].toLowerCase()).join(", ")}.`);
   return `CALENDARIO Y PATRONES (de sus propios datos):\n${out.join(" ")}
 Cómo usarlo: si la semana está cargada o hay un examen cerca, tenlo presente con suavidad (por ejemplo "veo que tienes bastante esta semana"), ayuda a priorizar y a trocear, y si hay un patrón de bajón antes de exámenes, puedes mencionarlo con cariño para anticiparse ("he notado que los días antes de un examen te cuesta más; ¿preparamos algo para esos días?"). Nunca lo uses para presionar ni lo presentes como un diagnóstico.`;
 }

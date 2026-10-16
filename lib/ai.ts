@@ -27,6 +27,8 @@ export interface CompanionContext {
   userSummary?: string;
   /** Contenido de Lagun del tema (consejos del feed) para apoyarse en él. */
   appContent?: string;
+  /** Idioma en el que debe responder (p. ej. "euskera"). */
+  language?: string;
 }
 
 export interface CompanionReply {
@@ -94,6 +96,10 @@ function specialistPrompt(ctx: CompanionContext): string {
 /** Parte variable: quién es la persona y el contenido de Lagun relacionado. */
 function contextNote(ctx: CompanionContext): string {
   const parts: string[] = [];
+  if (ctx.language)
+    parts.push(
+      `IDIOMA: responde SIEMPRE en ${ctx.language}, aunque estas instrucciones estén en castellano. Si la persona te escribe en otro idioma, respóndele en el idioma en el que te escriba. El campo "crisis" sigue siendo true/false.`,
+    );
   if (ctx.displayName) parts.push(`La persona se llama ${ctx.displayName}.`);
   if (ctx.primaryArea && (!ctx.topic || ctx.topic === "general"))
     parts.push(`Lo que más le pesa últimamente suele ser ${AREA_HINT[ctx.primaryArea]}, pero no lo des por hecho.`);

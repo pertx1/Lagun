@@ -1,21 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getI18n } from "@/lib/i18n/server";
 import { RegisterForm } from "./RegisterForm";
 
-export const metadata: Metadata = { title: "Crear cuenta" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getI18n()).t.meta.titles.register };
+}
 
-export default function RegisterPage() {
+export default async function RegisterPage() {
+  const { t } = await getI18n();
   return (
     <>
-      <h1 className="text-center text-3xl font-black">Bienvenido/a a Lagun</h1>
-      <p className="mb-6 text-center text-muted">
-        Un sitio tranquilo para cuando lo necesites. Sin presión, sin rachas, a tu ritmo.
-      </p>
+      <h1 className="text-center text-3xl font-black">{t.auth.registerTitle}</h1>
+      <p className="mb-6 text-center text-muted">{t.auth.registerSubtitle}</p>
       <RegisterForm />
       <p className="mt-6 text-center">
-        ¿Ya tienes cuenta?{" "}
+        {t.auth.haveAccount}{" "}
         <Link href="/login" className="font-bold text-accent underline">
-          Entra
+          {t.auth.loginLink}
         </Link>
       </p>
     </>

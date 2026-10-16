@@ -1,5 +1,5 @@
 import type { Area } from "./types";
-import { AREA_INFO } from "@/config/areas";
+import { es } from "@/lib/i18n/dict/es";
 
 /**
  * Conocimiento especializado de Igel por tema.
@@ -13,13 +13,8 @@ import { AREA_INFO } from "@/config/areas";
 
 export type ChatTopic = Area | "general";
 
-export const TOPIC_LABELS: Record<ChatTopic, { label: string; emoji: string; greeting: string }> = {
-  general: { label: "General", emoji: "🐸", greeting: "Aquí puedes contarme lo que quieras, sin juicios. ¿Cómo estás ahora mismo?" },
-  acad: { label: "Estudios", emoji: "📚", greeting: "Hablemos de estudios. ¿Qué es lo que más te agobia ahora mismo?" },
-  soc: { label: "Social", emoji: "🫶", greeting: "Hablemos de amistades y gente. ¿Qué te está pasando?" },
-  fam: { label: "Familia", emoji: "🏡", greeting: "Hablemos de casa. ¿Cómo están las cosas por ahí?" },
-  iden: { label: "Identidad", emoji: "🌈", greeting: "Este es un espacio seguro para hablar de quién eres. ¿Qué te ronda por la cabeza?" },
-};
+export const CHAT_TOPICS: ChatTopic[] = ["general", "acad", "soc", "fam", "iden"];
+export const TOPIC_EMOJI: Record<ChatTopic, string> = { general: "🐸", acad: "📚", soc: "🫶", fam: "🏡", iden: "🌈" };
 
 export function isChatTopic(x: unknown): x is ChatTopic {
   return x === "general" || x === "acad" || x === "soc" || x === "fam" || x === "iden";
@@ -114,7 +109,7 @@ export function describeUser(s: UserSummary): string {
         .map((e) => `${e.title} (${e.inDays === 0 ? "hoy" : e.inDays === 1 ? "mañana" : `en ${e.inDays} días`})`)
         .join("; ")}.`,
     );
-  if (s.activeAreas?.length) out.push(`Temas que le preocupan según su cuestionario: ${s.activeAreas.map((a) => AREA_INFO[a].label).join(", ")}.`);
+  if (s.activeAreas?.length) out.push(`Temas que le preocupan según su cuestionario: ${s.activeAreas.map((a) => es.areas[a].label).join(", ")}.`);
   if (!out.length) return "";
   return `LO QUE SABES DE LA PERSONA (úsalo con tacto, no lo recites ni digas que lo has "leído"; menciónalo solo si encaja):\n${out.join(" ")}`;
 }

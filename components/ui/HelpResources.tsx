@@ -1,13 +1,23 @@
+"use client";
+
 import Link from "next/link";
 import type { CountryResources, HelpResource } from "@/config/safety";
+import { pick } from "@/lib/i18n/config";
+import { useI18n } from "@/lib/i18n/client";
+
+function formatPhone(p: string) {
+  if (p.length === 9) return `${p.slice(0, 3)} ${p.slice(3, 6)} ${p.slice(6)}`;
+  return p;
+}
 
 function ResourceItem({ r, strong = false }: { r: HelpResource; strong?: boolean }) {
+  const { t, f, locale } = useI18n();
   return (
     <li className={`rounded-2xl border-2 p-4 ${strong ? "border-primary bg-surface" : "border-line bg-bg"}`}>
-      <p className="font-extrabold">{r.name}</p>
+      <p className="font-extrabold">{pick(r.name, locale)}</p>
       <p className="text-sm text-muted">
-        {r.description}
-        {r.always && " · 24 h"}
+        {pick(r.description, locale)}
+        {r.always && ` · ${t.help.allDay}`}
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         {r.phone && (
@@ -15,7 +25,7 @@ function ResourceItem({ r, strong = false }: { r: HelpResource; strong?: boolean
             href={`tel:${r.phone}`}
             className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-primary px-4 py-2 font-bold text-on-primary"
           >
-            <span aria-hidden>📞</span> Llamar al {formatPhone(r.phone)}
+            <span aria-hidden>📞</span> {f(t.help.call, { phone: formatPhone(r.phone) })}
           </a>
         )}
         {r.url && (
@@ -25,17 +35,12 @@ function ResourceItem({ r, strong = false }: { r: HelpResource; strong?: boolean
             rel="noopener noreferrer"
             className="inline-flex min-h-11 items-center gap-2 rounded-2xl border-2 border-line px-4 py-2 font-bold text-accent"
           >
-            Abrir web <span className="sr-only">(se abre en otra pestaña)</span>
+            {t.help.openWeb} <span className="sr-only">{t.common.newTab}</span>
           </a>
         )}
       </div>
     </li>
   );
-}
-
-function formatPhone(p: string) {
-  if (p.length === 9) return `${p.slice(0, 3)} ${p.slice(3, 6)} ${p.slice(6)}`;
-  return p;
 }
 
 /**
@@ -52,54 +57,61 @@ export function HelpResources({
   showIdentity?: boolean;
   compact?: boolean;
 }) {
+  const { t, f, locale } = useI18n();
+
   if (compact) {
     const main = resources.crisis[0];
     return (
       <div className="flex flex-col gap-3">
-        {main && <ResourceItem r={main} strong />}
+        {main && (
+          <ul>
+            <ResourceItem r={main} strong />
+          </ul>
+        )}
         <p className="text-sm">
-          Si estás en peligro ahora mismo, llama al{" "}
+          {t.help.compactDanger}{" "}
           <a href={`tel:${resources.emergency.phone}`} className="font-extrabold text-danger underline">
             {resources.emergency.phone}
           </a>
           .{" "}
           <Link href="/ayuda" className="font-bold text-accent underline">
-            Más recursos
+            {t.help.more}
           </Link>
         </p>
       </div>
     );
   }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="rounded-3xl border-2 border-danger bg-danger-soft p-4">
-        <p className="font-extrabold text-danger">Si estás en peligro ahora mismo</p>
-        <p className="mb-3 text-sm">{resources.emergency.description}</p>
+        <p className="font-extrabold text-danger">{t.help.dangerTitle}</p>
+        <p className="mb-3 text-sm">{pick(resources.emergency.description, locale)}</p>
         <a
           href={`tel:${resources.emergency.phone}`}
           className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-danger px-5 py-2 text-lg font-black text-bg"
         >
-          <span aria-hidden>🚨</span> Llamar al {resources.emergency.phone}
+          <span aria-hidden>🚨</span> {f(t.help.call, { phone: resources.emergency.phone ?? "112" })}
         </a>
       </div>
 
       <section aria-labelledby="crisis-h">
         <h2 id="crisis-h" className="mb-2 text-lg font-extrabold">
-          Hablar con alguien ahora
+          {t.help.talkNow}
         </h2>
         <ul className="flex flex-col gap-3">
           {resources.crisis.map((r) => (
-            <ResourceItem key={r.name} r={r} strong />
+            <ResourceItem key={r.name.es} r={r} strong />
           ))}
         </ul>
       </section>
 
       {resources.support.length > 0 && (
         <details className="rounded-2xl border border-line p-3">
-          <summary className="cursor-pointer text-lg font-extrabold">Otros apoyos</summary>
+          <summary className="cursor-pointer text-lg font-extrabold">{t.help.otherSupport}</summary>
           <ul className="mt-3 flex flex-col gap-3">
             {resources.support.map((r) => (
-              <ResourceItem key={r.name} r={r} />
+              <ResourceItem key={r.name.es} r={r} />
             ))}
           </ul>
         </details>
@@ -107,10 +119,10 @@ export function HelpResources({
 
       {showIdentity && resources.identity.length > 0 && (
         <details className="rounded-2xl border border-line p-3">
-          <summary className="cursor-pointer text-lg font-extrabold">Identidad y diversidad</summary>
+          <summary className="cursor-pointer text-lg font-extrabold">{t.help.identity}</summary>
           <ul className="mt-3 flex flex-col gap-3">
             {resources.identity.map((r) => (
-              <ResourceItem key={r.name} r={r} />
+              <ResourceItem key={r.name.es} r={r} />
             ))}
           </ul>
         </details>

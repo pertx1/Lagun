@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { isReassessmentDue } from "@/lib/scoring";
+import { getI18n } from "@/lib/i18n/server";
+import { fmt } from "@/lib/i18n/config";
 import { BottomNav } from "@/components/ui/BottomNav";
 import { ThemeSync } from "@/components/ui/ThemeSync";
 import { Frog } from "@/components/Frog/Frog";
@@ -18,6 +20,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     .limit(1)
     .maybeSingle();
   if (isReassessmentDue(last?.taken_at ?? profile.onboarded_at)) redirect("/onboarding");
+  const { t } = await getI18n();
   return (
     <>
       <ThemeSync theme={profile.theme} />
@@ -32,12 +35,12 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           <Link
             href="/shop"
             className="ml-auto inline-flex items-center gap-1 rounded-full bg-surface px-2.5 py-1 text-sm font-bold"
-            aria-label={`Igel y su tienda. Tienes ${profile.points} hojas`}
+            aria-label={fmt(t.nav.shopAria, { n: profile.points })}
           >
             <Frog state={profile.frog_state} size={26} animate={false} label="" />
             <span aria-hidden>🍃 {profile.points}</span>
           </Link>
-          <Link href="/settings" className="rounded-full p-2 text-lg" aria-label="Ajustes">
+          <Link href="/settings" className="rounded-full p-2 text-lg" aria-label={t.nav.settings}>
             <span aria-hidden>⚙️</span>
           </Link>
         </div>

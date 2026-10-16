@@ -5,9 +5,9 @@ import type { ReactNode } from "react";
 import { requireProfile } from "@/lib/auth";
 import { partsInTz, safeTz } from "@/lib/dates";
 import type { Exam } from "@/lib/types";
-import { AREA_INFO } from "@/config/areas";
 import { AREA_TOOLS, isArea } from "@/config/areaTools";
 import { getResources } from "@/config/safety";
+import { getI18n } from "@/lib/i18n/server";
 import { ExamCalendar, PomodoroTool, StudyMethods } from "@/components/modules/acad";
 import { ChallengeTool, SituationsTool, SocialSkills, VentTool } from "@/components/modules/soc";
 import { CommunicationTool, FamilyHelpNote, LimitsTool } from "@/components/modules/fam";
@@ -16,8 +16,9 @@ import { loadStudyPatterns } from "@/lib/patterns-data";
 
 export async function generateMetadata({ params }: PageProps<"/area/[area]/[tool]">): Promise<Metadata> {
   const { area, tool } = await params;
-  const t = isArea(area) ? AREA_TOOLS[area].find((x) => x.slug === tool) : undefined;
-  return { title: t?.title ?? "Lagun" };
+  const { t } = await getI18n();
+  const def = isArea(area) ? AREA_TOOLS[area].find((x) => x.slug === tool) : undefined;
+  return { title: def ? t.tools[def.slug].title : "Lagun" };
 }
 
 export default async function ToolPage({ params }: PageProps<"/area/[area]/[tool]">) {
@@ -26,6 +27,7 @@ export default async function ToolPage({ params }: PageProps<"/area/[area]/[tool
   const def = AREA_TOOLS[area].find((t) => t.slug === tool && !t.href);
   if (!def) notFound();
   const { supabase, profile } = await requireProfile();
+  const { t } = await getI18n();
 
   let content: ReactNode = null;
   let extra: ReactNode = null;
@@ -39,12 +41,12 @@ export default async function ToolPage({ params }: PageProps<"/area/[area]/[tool
         .order("due_date")
         .limit(50);
       content = <ExamCalendar exams={(data ?? []) as Exam[]} today={today} />;
-      const patterns = await loadStudyPatterns(supabase, safeTz(profile.timezone));
+      const patterns = await loadStudyPatterns(supabase, safeTz(profile.timezone), t);
       if (patterns.insights.length)
         extra = (
           <section aria-labelledby="noticed-h" className="rounded-3xl bg-surface-2 p-5">
             <h2 id="noticed-h" className="mb-2 font-extrabold">
-              🐸 Lo que Igel ha notado
+              {t.acad.noticed}
             </h2>
             <ul className="flex flex-col gap-2">
               {patterns.insights.map((t) => (
@@ -52,7 +54,7 @@ export default async function ToolPage({ params }: PageProps<"/area/[area]/[tool
               ))}
             </ul>
             <Link href="/chat?tema=acad" className="mt-3 inline-block font-bold text-accent underline">
-              Hablarlo con Igel
+              {t.acad.talkIt}
             </Link>
           </section>
         );
@@ -103,10 +105,10 @@ export default async function ToolPage({ params }: PageProps<"/area/[area]/[tool
   return (
     <div className="flex flex-col gap-4">
       <Link href={`/area/${area}`} className="self-start font-bold text-accent">
-        ‹ {AREA_INFO[area].label}
+        ‹ {t.areas[area].label}
       </Link>
       <h1 className="flex items-center gap-2 text-2xl font-black">
-        <span aria-hidden>{def.emoji}</span> {def.title}
+        <span aria-hidden>{def.emoji}</span> {t.tools[def.slug].title}
       </h1>
       <div className="flex flex-col gap-4 rounded-3xl border border-line bg-surface p-5">{content}</div>
       {extra}

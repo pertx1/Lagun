@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
+import { getI18n } from "@/lib/i18n/server";
 import { requireProfile } from "@/lib/auth";
 import { isReassessmentDue } from "@/lib/scoring";
 import { getResources } from "@/config/safety";
 import { Questionnaire } from "./Questionnaire";
 import { ThemeSync } from "@/components/ui/ThemeSync";
 
-export const metadata: Metadata = { title: "Conocernos" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getI18n()).t.meta.titles.onboarding };
+}
 
 export default async function OnboardingPage() {
   const { supabase, profile } = await requireProfile({ allowNotOnboarded: true });

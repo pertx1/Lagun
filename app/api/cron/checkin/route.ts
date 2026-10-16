@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { partsInTz, safeTz } from "@/lib/dates";
-import { CHECKIN_MESSAGES, sendPush } from "@/lib/push";
+import { sendPush } from "@/lib/push";
+import { DICTS, isLocale } from "@/lib/i18n";
 
 /**
  * Cron horario (vercel.json). Envía el recordatorio del check-in de fin de día SOLO a quien:
@@ -16,11 +17,12 @@ export async function GET(req: NextRequest) {
   }
 
   const admin = createAdminClient();
-  const { data: profiles, error } = await admin
-    .from("profiles")
-    .select("id, timezone, checkin_hour, checkin_days")
-    .eq("end_of_day_checkin", true)
-    .eq("notifications_enabled", true);
+  type Row = { id: string; timezone: string; checkin_hour: number; checkin_days: number[]; locale?: string };
+  const query = (cols: string) =>
+    admin.from("profiles").select(cols).eq("end_of_day_checkin", true).eq("notifications_enabled", true).returns<Row[]>();
+  let { data: profiles, error } = await query("id, timezone, checkin_hour, checkin_days, locale");
+  // Sin la migración de idiomas, la columna locale no existe todavía: se envía en castellano.
+  if (error) ({ data: profiles, error } = await query("id, timezone, checkin_hour, checkin_days"));
   if (error) return NextResponse.json({ error: "db" }, { status: 500 });
 
   const now = new Date();
@@ -42,9 +44,11 @@ export async function GET(req: NextRequest) {
     if (last && partsInTz(new Date(last.created_at), tz).ymd === partsInTz(now, tz).ymd) continue;
 
     const { data: subs } = await admin.from("push_subscriptions").select("id, endpoint, p256dh, auth").eq("user_id", p.id);
-    const body = CHECKIN_MESSAGES[now.getUTCDate() % CHECKIN_MESSAGES.length];
+    const locale = p.locale;
+    const push = DICTS[isLocale(locale) ? locale : "es"].push;
+    const body = push.checkin[now.getUTCDate() % push.checkin.length];
     for (const s of subs ?? []) {
-      const r = await sendPush(s, { title: "Lagun", body, url: "/home", tag: "checkin" });
+      const r = await sendPush(s, { title: push.title, body, url: "/home", tag: "checkin" });
       if (r === "ok") sent++;
       if (r === "gone") await admin.from("push_subscriptions").delete().eq("id", s.id);
     }

@@ -1,16 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
-import { getResources, SUPPORTED_COUNTRIES } from "@/config/safety";
+import { getI18n } from "@/lib/i18n/server";
+import { getResources, supportedCountries } from "@/config/safety";
 import { HelpResources } from "@/components/ui/HelpResources";
 import { Disclaimer } from "@/components/ui/Disclaimer";
 import { Frog } from "@/components/Frog/Frog";
 
-export const metadata: Metadata = { title: "Ayuda" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getI18n()).t.meta.titles.help };
+}
 
 export default async function AyudaPage({ searchParams }: PageProps<"/ayuda">) {
   const sp = await searchParams;
   const { profile } = await getSession();
+  const { t, locale } = await getI18n();
   const country = typeof sp.pais === "string" ? sp.pais : profile?.country;
   const resources = getResources(country);
 
@@ -19,27 +23,28 @@ export default async function AyudaPage({ searchParams }: PageProps<"/ayuda">) {
       <div className="mb-4 flex items-center gap-3">
         <Frog size={72} mood="calm" label="" />
         <div>
-          <h1 className="text-2xl font-black">No estás solo/a</h1>
-          <p className="text-muted">Pedir ayuda es un acto de valentía. Aquí hay personas que te escuchan.</p>
+          <h1 className="text-2xl font-black">{t.help.pageTitle}</h1>
+          <p className="text-muted">{t.help.pageSubtitle}</p>
         </div>
       </div>
 
       <div className="mb-6 rounded-3xl bg-surface p-4 text-sm">
-        <p className="font-bold">Un momento para respirar 🫧</p>
-        <p>
-          Inspira despacio contando 4… aguanta 4… suelta en 6. Repite unas veces. Lo que sientes ahora es muy intenso,
-          pero puede cambiar. No tienes que resolverlo todo ahora: solo dar el siguiente paso.
-        </p>
+        <p className="font-bold">{t.help.breatheTitle}</p>
+        <p>{t.help.breatheBody}</p>
       </div>
 
       <HelpResources resources={resources} showIdentity />
 
-      <nav aria-label="Elegir país" className="mt-6 text-sm">
-        <span className="text-muted">Recursos de: </span>
-        {SUPPORTED_COUNTRIES.map((c, i) => (
+      <nav aria-label={t.help.countryNav} className="mt-6 text-sm">
+        <span className="text-muted">{t.help.resourcesOf}</span>
+        {supportedCountries(locale).map((c, i) => (
           <span key={c.code}>
             {i > 0 && " · "}
-            <Link href={`/ayuda?pais=${c.code}`} className="font-bold text-accent underline" aria-current={c.code === resources.code ? "true" : undefined}>
+            <Link
+              href={`/ayuda?pais=${c.code}`}
+              className="font-bold text-accent underline"
+              aria-current={c.code === resources.code ? "true" : undefined}
+            >
               {c.name}
             </Link>
           </span>
@@ -48,7 +53,7 @@ export default async function AyudaPage({ searchParams }: PageProps<"/ayuda">) {
 
       <div className="mt-8 flex flex-col gap-3">
         <Link href={profile ? "/home" : "/"} className="font-bold text-accent underline">
-          ← Volver
+          {t.help.back}
         </Link>
         <Disclaimer />
       </div>

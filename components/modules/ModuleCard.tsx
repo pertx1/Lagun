@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { Tip } from "@/lib/i18n/dict/es";
 
 export function ModuleCard({
   emoji,
@@ -13,7 +14,7 @@ export function ModuleCard({
   children: ReactNode;
   id?: string;
 }) {
-  const hid = `${id ?? title.replace(/\W+/g, "-").toLowerCase()}-h`;
+  const hid = `${id ?? title.normalize("NFD").replace(/[^A-Za-z0-9]+/g, "-").toLowerCase()}-h`;
   return (
     <section aria-labelledby={hid} className="rounded-3xl border border-line bg-surface p-5">
       <h3 id={hid} className="flex items-center gap-2 text-lg font-extrabold">
@@ -28,10 +29,7 @@ export function ModuleCard({
   );
 }
 
-export interface Tip {
-  title: string;
-  body: ReactNode;
-}
+export type { Tip } from "@/lib/i18n/dict/es";
 
 /** Lista de consejos desplegables (accesible con teclado, sin JS). */
 export function TipList({ tips }: { tips: Tip[] }) {
@@ -45,7 +43,23 @@ export function TipList({ tips }: { tips: Tip[] }) {
             </span>
             {t.title}
           </summary>
-          <div className="mt-2 text-[0.97rem] leading-relaxed">{t.body}</div>
+          <div className="mt-2 text-[0.97rem] leading-relaxed">
+            {t.body && <p>{t.body}</p>}
+            {t.list &&
+              (t.ordered ? (
+                <ol className="ml-5 list-decimal">
+                  {t.list.map((x) => (
+                    <li key={x}>{x}</li>
+                  ))}
+                </ol>
+              ) : (
+                <ul className="ml-5 list-disc">
+                  {t.list.map((x) => (
+                    <li key={x}>{x}</li>
+                  ))}
+                </ul>
+              ))}
+          </div>
         </details>
       ))}
     </div>

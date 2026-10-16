@@ -4,16 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import { awardActivity } from "@/app/actions";
 import { Button } from "@/components/ui/Button";
 import { PointsToast } from "./PointsToast";
+import { useI18n } from "@/lib/i18n/client";
 
 const PHASES = [
-  { label: "Inspira", seconds: 4 },
-  { label: "Aguanta", seconds: 4 },
-  { label: "Suelta", seconds: 6 },
+  { key: "inhale", seconds: 4 },
+  { key: "hold", seconds: 4 },
+  { key: "exhale", seconds: 6 },
 ] as const;
 const ROUNDS = 4;
 
 /** Respiración guiada 4-4-6, unos 56 segundos. */
 export function BreathingExercise() {
+  const { t, f } = useI18n();
   const [running, setRunning] = useState(false);
   const [phase, setPhase] = useState(0);
   const [round, setRound] = useState(0);
@@ -62,7 +64,7 @@ export function BreathingExercise() {
   }
 
   const current = PHASES[phase];
-  const scale = !running ? 0.7 : current.label === "Inspira" ? 1 : current.label === "Aguanta" ? 1 : 0.65;
+  const scale = !running ? 0.7 : current.key === "exhale" ? 0.65 : 1;
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -79,23 +81,23 @@ export function BreathingExercise() {
         <p className="relative text-center font-extrabold" aria-live="polite">
           {running ? (
             <>
-              <span className="block text-xl">{current.label}</span>
+              <span className="block text-xl">{t.breathing[current.key]}</span>
               <span className="text-3xl">{left}</span>
             </>
           ) : (
-            "¿Respiramos?"
+            t.breathing.idle
           )}
         </p>
       </div>
-      {running && <p className="text-sm text-muted">Ronda {round + 1} de {ROUNDS}</p>}
+      {running && <p className="text-sm text-muted">{f(t.breathing.round, { n: round + 1, total: ROUNDS })}</p>}
       {running ? (
         <Button variant="secondary" onClick={stop}>
-          Parar
+          {t.breathing.stop}
         </Button>
       ) : (
-        <Button onClick={start}>Empezar (1 min)</Button>
+        <Button onClick={start}>{t.breathing.start}</Button>
       )}
-      <PointsToast points={points} text="Un minuto para ti. ¡Bien hecho!" />
+      <PointsToast points={points} text={t.breathing.done} />
     </div>
   );
 }

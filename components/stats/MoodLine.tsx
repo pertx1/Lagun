@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { MOOD_EMOJI, MOOD_LABELS } from "@/config/emotions";
+import { MOOD_EMOJI } from "@/config/emotions";
+import { useI18n } from "@/lib/i18n/client";
 
 export interface MoodPoint {
   /** YYYY-MM-DD */
@@ -14,12 +15,13 @@ const W = 320;
 const H = 170;
 const PAD = { l: 30, r: 10, t: 12, b: 24 };
 
-function fmt(day: string) {
-  return new Date(day + "T12:00:00Z").toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+function fmtDay(day: string, locale: string) {
+  return new Date(day + "T12:00:00Z").toLocaleDateString(locale, { day: "numeric", month: "short" });
 }
 
 /** Evolución del ánimo (una serie, sin leyenda: el título la nombra). Hover con cruz + tooltip. */
 export function MoodLine({ points, fromDay, toDay }: { points: MoodPoint[]; fromDay: string; toDay: string }) {
+  const { t, f, dateLocale } = useI18n();
   const [hover, setHover] = useState<number | null>(null);
   const t0 = Date.parse(fromDay + "T00:00:00Z");
   const t1 = Math.max(t0 + 86_400_000, Date.parse(toDay + "T00:00:00Z"));
@@ -50,7 +52,7 @@ export function MoodLine({ points, fromDay, toDay }: { points: MoodPoint[]; from
         viewBox={`0 0 ${W} ${H}`}
         className="w-full touch-none"
         role="img"
-        aria-label={`Ánimo de los últimos días: ${points.length} días con check-in.`}
+        aria-label={f(t.stats.moodAria, { n: points.length })}
         onPointerMove={onMove}
         onPointerLeave={() => setHover(null)}
       >
@@ -62,8 +64,8 @@ export function MoodLine({ points, fromDay, toDay }: { points: MoodPoint[]; from
             </text>
           </g>
         ))}
-        <text x={PAD.l} y={H - 6} fontSize="11" fill="var(--muted)">{fmt(fromDay)}</text>
-        <text x={W - PAD.r} y={H - 6} fontSize="11" fill="var(--muted)" textAnchor="end">{fmt(toDay)}</text>
+        <text x={PAD.l} y={H - 6} fontSize="11" fill="var(--muted)">{fmtDay(fromDay, dateLocale)}</text>
+        <text x={W - PAD.r} y={H - 6} fontSize="11" fill="var(--muted)" textAnchor="end">{fmtDay(toDay, dateLocale)}</text>
         {points.length > 1 && <path d={d} fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />}
         {points.map((p, i) => (
           <circle
@@ -85,23 +87,23 @@ export function MoodLine({ points, fromDay, toDay }: { points: MoodPoint[]; from
           className="pointer-events-none absolute top-0 rounded-xl border border-line bg-bg px-3 py-1.5 text-sm shadow-soft"
           style={{ left: `${(x(hp.day) / W) * 100}%`, transform: "translateX(-50%)" }}
         >
-          <p className="font-bold">{fmt(hp.day)}</p>
+          <p className="font-bold">{fmtDay(hp.day, dateLocale)}</p>
           <p>
-            {MOOD_EMOJI[Math.round(hp.mood)]} {MOOD_LABELS[Math.round(hp.mood)]}
+            {MOOD_EMOJI[Math.round(hp.mood)]} {t.moodLabels[Math.round(hp.mood)]}
           </p>
         </div>
       )}
       <details className="mt-2 text-sm">
-        <summary className="cursor-pointer font-bold text-accent">Ver como tabla</summary>
+        <summary className="cursor-pointer font-bold text-accent">{t.common.tableView}</summary>
         <table className="mt-2 w-full text-left">
           <thead>
-            <tr><th className="py-1">Día</th><th>Ánimo</th></tr>
+            <tr><th className="py-1">{t.stats.day}</th><th>{t.stats.mood}</th></tr>
           </thead>
           <tbody>
             {points.map((p) => (
               <tr key={p.day} className="border-t border-line">
-                <td className="py-1">{fmt(p.day)}</td>
-                <td>{MOOD_LABELS[Math.round(p.mood)]}</td>
+                <td className="py-1">{fmtDay(p.day, dateLocale)}</td>
+                <td>{t.moodLabels[Math.round(p.mood)]}</td>
               </tr>
             ))}
           </tbody>

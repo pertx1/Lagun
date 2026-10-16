@@ -2,20 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { logMood } from "@/app/actions";
-import { MOOD_EMOJI, MOOD_LABELS } from "@/config/emotions";
+import { MOOD_EMOJI } from "@/config/emotions";
+import { useI18n } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/Button";
 import { inputClass } from "@/components/ui/Field";
 import { PointsToast } from "./PointsToast";
 
-const REPLIES = [
-  "Siento que hoy esté siendo tan duro. Gracias por contármelo. Si te apetece, puedes hablar conmigo o respirar un ratito.",
-  "Vaya, parece un día pesado. No pasa nada por estar así. Aquí estoy.",
-  "Días así también cuentan. Gracias por pararte a mirarte.",
-  "¡Me alegra! Guárdate eso que ha salido bien.",
-  "¡Qué bien! Disfrútalo, te lo mereces.",
-];
-
-export function MoodCheckin({ question = "¿Cómo estás ahora mismo?" }: { question?: string }) {
+export function MoodCheckin({ question }: { question?: string }) {
+  const { t } = useI18n();
   const [mood, setMood] = useState<number | null>(null);
   const [note, setNote] = useState("");
   const [done, setDone] = useState<{ points: number; mood: number } | null>(null);
@@ -24,8 +18,8 @@ export function MoodCheckin({ question = "¿Cómo estás ahora mismo?" }: { ques
   if (done)
     return (
       <div className="flex flex-col gap-2" role="status">
-        <p>{REPLIES[done.mood]}</p>
-        <PointsToast points={done.points} text="Check-in guardado." />
+        <p>{t.checkin.replies[done.mood]}</p>
+        <PointsToast points={done.points} text={t.checkin.saved} />
       </div>
     );
 
@@ -42,9 +36,9 @@ export function MoodCheckin({ question = "¿Cómo estás ahora mismo?" }: { ques
       }}
     >
       <fieldset>
-        <legend className="mb-2 font-bold">{question}</legend>
+        <legend className="mb-2 font-bold">{question ?? t.checkin.question}</legend>
         <div className="grid grid-cols-5 gap-2">
-          {MOOD_LABELS.map((label, i) => (
+          {t.moodLabels.map((label, i) => (
             <button
               key={label}
               type="button"
@@ -63,7 +57,7 @@ export function MoodCheckin({ question = "¿Cómo estás ahora mismo?" }: { ques
       {mood !== null && (
         <>
           <label htmlFor="mood-note" className="text-sm font-bold">
-            ¿Quieres añadir algo? <span className="font-normal text-muted">(opcional, solo lo ves tú)</span>
+            {t.checkin.noteLabel} <span className="font-normal text-muted">{t.checkin.noteHint}</span>
           </label>
           <textarea
             id="mood-note"
@@ -74,7 +68,7 @@ export function MoodCheckin({ question = "¿Cómo estás ahora mismo?" }: { ques
             className={inputClass}
           />
           <Button type="submit" disabled={pending}>
-            {pending ? "Guardando…" : "Guardar"}
+            {pending ? t.common.saving : t.common.save}
           </Button>
         </>
       )}

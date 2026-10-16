@@ -8,7 +8,7 @@ export interface JarBall {
 }
 
 /** Jarra SVG que se llena con bolas de colores (una por emoción registrada). */
-export function EmotionJar({ balls, title }: { balls: JarBall[]; title: string }) {
+export function EmotionJar({ balls, title, emptyText }: { balls: JarBall[]; title: string; emptyText: string }) {
   const pos = layoutBalls(balls.length);
   return (
     <svg viewBox="0 0 280 360" className="mx-auto w-full max-w-72" role="img" aria-label={title}>
@@ -54,7 +54,7 @@ export function EmotionJar({ balls, title }: { balls: JarBall[]; title: string }
       <path d="M70 52 L210 52" stroke="#fff" strokeOpacity="0.35" strokeWidth="5" strokeLinecap="round" />
       {balls.length === 0 && (
         <text x="140" y="230" textAnchor="middle" fontSize="15" fontWeight="700" fill="var(--muted)">
-          Aún vacía, a la espera
+          {emptyText}
         </text>
       )}
     </svg>

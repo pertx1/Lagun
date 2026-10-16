@@ -1,32 +1,39 @@
 import type { Metadata } from "next";
+import { getI18n } from "@/lib/i18n/server";
 import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { partsInTz, safeTz } from "@/lib/dates";
 import { AREAS, type ActivityType, type Area } from "@/lib/types";
-import { AREA_INFO } from "@/config/areas";
+import { AREA_EMOJI } from "@/config/areas";
+import { DATE_LOCALE, fmt } from "@/lib/i18n/config";
 import { EMOTIONS } from "@/config/emotions";
 import type { AssessmentScores } from "@/lib/scoring";
 import { MoodLine, type MoodPoint } from "@/components/stats/MoodLine";
 import { BarList } from "@/components/stats/BarList";
 import { Card, CardTitle } from "@/components/ui/Card";
 
-export const metadata: Metadata = { title: "Tu progreso" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getI18n()).t.meta.titles.stats };
+}
 
-const ACTIVITY_LABELS: Partial<Record<ActivityType, { label: string; icon: string }>> = {
-  breathing: { label: "Respiración", icon: "🫧" },
-  grounding: { label: "Grounding", icon: "🌍" },
-  checkin: { label: "Check-ins", icon: "🌡️" },
-  emotion: { label: "Emociones", icon: "🫙" },
-  pomodoro: { label: "Pomodoros", icon: "🍅" },
-  challenge: { label: "Retos", icon: "🌱" },
-  journal: { label: "Desahogos", icon: "🎈" },
-  story: { label: "Lecturas", icon: "📖" },
-  module: { label: "Ejercicios", icon: "🧩" },
-  chat: { label: "Charlas", icon: "💬" },
+const ACTIVITY_ICONS: Partial<Record<ActivityType, string>> = {
+  breathing: "🫧",
+  grounding: "🌍",
+  checkin: "🌡️",
+  emotion: "🫙",
+  pomodoro: "🍅",
+  challenge: "🌱",
+  journal: "🎈",
+  story: "📖",
+  module: "🧩",
+  chat: "💬",
 };
 
 export default async function StatsPage() {
   const { supabase, profile } = await requireProfile();
+  const { t, locale } = await getI18n();
+  const st = t.stats;
+  const dl = DATE_LOCALE[locale];
   const tz = safeTz(profile.timezone);
   const now = new Date();
   const since30 = new Date(now.getTime() - 30 * 86_400_000);
@@ -59,7 +66,7 @@ export default async function StatsPage() {
 
   const emotionItems = EMOTIONS.map((e) => ({
     key: e.key,
-    label: e.label,
+    label: t.emotions[e.key],
     icon: e.emoji,
     value: (emotions ?? []).filter((x) => x.emotion === e.key).length,
   }))
@@ -69,8 +76,8 @@ export default async function StatsPage() {
   const actCounts = new Map<string, number>();
   for (const a of activities ?? []) actCounts.set(a.type, (actCounts.get(a.type) ?? 0) + 1);
   const selfCare = [...actCounts.entries()]
-    .filter(([t]) => ACTIVITY_LABELS[t as ActivityType])
-    .map(([t, n]) => ({ key: t, label: ACTIVITY_LABELS[t as ActivityType]!.label, icon: ACTIVITY_LABELS[t as ActivityType]!.icon, value: n }))
+    .filter(([k]) => ACTIVITY_ICONS[k as ActivityType])
+    .map(([k, n]) => ({ key: k, label: st.activities[k] ?? k, icon: ACTIVITY_ICONS[k as ActivityType]!, value: n }))
     .sort((a, b) => b.value - a.value);
   const selfCareTotal = selfCare.reduce((s, x) => s + x.value, 0);
 
@@ -83,22 +90,22 @@ export default async function StatsPage() {
   const lighter: Area[] = last && prev ? AREAS.filter((a) => prev.areas[a] - last.areas[a] >= 0.1) : [];
 
   const wins: string[] = [];
-  if (recent !== null && before !== null && recent - before >= 0.3) wins.push("Tu ánimo de estas dos semanas está un poco mejor que el de las anteriores. 🌤️");
-  for (const a of lighter) wins.push(`${AREA_INFO[a].emoji} ${AREA_INFO[a].label} te pesa menos que en tu revisión anterior.`);
-  if (selfCareTotal >= 5) wins.push(`Este mes has dedicado ${selfCareTotal} ratitos a cuidarte. Eso cuenta, y mucho.`);
+  if (recent !== null && before !== null && recent - before >= 0.3) wins.push(st.winMood);
+  for (const a of lighter) wins.push(fmt(st.winLighter, { emoji: AREA_EMOJI[a], label: t.areas[a].label }));
+  if (selfCareTotal >= 5) wins.push(fmt(st.winSelfCare, { n: selfCareTotal }));
 
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-2xl font-black">Tu progreso</h1>
-        <p className="text-muted">No es una nota: es un mapa de cómo te has ido sintiendo. Todo lo que ves aquí lo has hecho tú.</p>
+        <h1 className="text-2xl font-black">{st.title}</h1>
+        <p className="text-muted">{st.subtitle}</p>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         {[
-          { n: points.length, label: "días con check-in", sub: "últimos 30 días" },
-          { n: (emotions ?? []).length, label: "emociones guardadas", sub: "últimos 30 días" },
-          { n: selfCareTotal, label: "ratitos de autocuidado", sub: "últimos 30 días" },
+          { n: points.length, label: st.tiles.checkins },
+          { n: (emotions ?? []).length, label: st.tiles.emotions },
+          { n: selfCareTotal, label: st.tiles.selfCare },
         ].map((s) => (
           <div key={s.label} className="rounded-3xl bg-surface p-3 text-center">
             <p className="text-3xl font-black tabular-nums text-accent">{s.n}</p>
@@ -109,7 +116,7 @@ export default async function StatsPage() {
 
       {wins.length > 0 && (
         <Card className="bg-surface-2">
-          <CardTitle>✨ Pequeñas mejoras</CardTitle>
+          <CardTitle>{st.winsTitle}</CardTitle>
           <ul className="mt-2 flex flex-col gap-1">
             {wins.map((w) => (
               <li key={w}>{w}</li>
@@ -119,11 +126,13 @@ export default async function StatsPage() {
       )}
 
       <Card>
-        <CardTitle>Tu ánimo (últimos 30 días)</CardTitle>
+        <CardTitle>{st.moodTitle}</CardTitle>
         {points.length === 0 ? (
           <p className="mt-2 text-muted">
-            Cuando hagas algún check-in, aquí verás cómo va cambiando tu ánimo. Sin prisa.{" "}
-            <Link href="/home" className="font-bold text-accent underline">Hacer uno ahora</Link>
+            {st.moodEmpty}{" "}
+            <Link href="/home" className="font-bold text-accent underline">
+              {st.moodEmptyLink}
+            </Link>
           </p>
         ) : (
           <div className="mt-3">
@@ -133,32 +142,36 @@ export default async function StatsPage() {
       </Card>
 
       <Card>
-        <CardTitle>Emociones que has guardado</CardTitle>
-        <p className="mb-3 text-sm text-muted">Últimos 30 días. Todas valen.</p>
+        <CardTitle>{st.emotionsTitle}</CardTitle>
+        <p className="mb-3 text-sm text-muted">{st.emotionsSub}</p>
         {emotionItems.length ? (
-          <BarList items={emotionItems} ariaLabel="Número de veces por emoción" />
+          <BarList items={emotionItems} ariaLabel={st.emotionsAria} />
         ) : (
           <p className="text-muted">
-            Tu <Link href="/jarra" className="font-bold text-accent underline">jarra</Link> está esperando su primera bola.
+            {st.jarEmptyA}{" "}
+            <Link href="/jarra" className="font-bold text-accent underline">
+              {st.jarEmptyLink}
+            </Link>{" "}
+            {st.jarEmptyB}
           </p>
         )}
       </Card>
 
       <Card>
-        <CardTitle>Ratitos de autocuidado</CardTitle>
-        <p className="mb-3 text-sm text-muted">Últimos 30 días.</p>
+        <CardTitle>{st.selfCareTitle}</CardTitle>
+        <p className="mb-3 text-sm text-muted">{st.last30}</p>
         {selfCare.length ? (
-          <BarList items={selfCare} ariaLabel="Ejercicios de autocuidado por tipo" />
+          <BarList items={selfCare} ariaLabel={st.selfCareAria} />
         ) : (
-          <p className="text-muted">Cuando respires, hagas un reto o un pomodoro, aparecerá aquí.</p>
+          <p className="text-muted">{st.selfCareEmpty}</p>
         )}
       </Card>
 
       {history.length > 0 && (
         <Card>
-          <CardTitle>Cómo han cambiado tus temas</CardTitle>
+          <CardTitle>{st.topicsTitle}</CardTitle>
           <p className="mb-3 text-sm text-muted">
-            Según tus revisiones. Barra más corta = ese tema te pesaba menos. Se conservan todas.
+            {st.topicsSub}
           </p>
           <ol className="flex flex-col gap-4">
             {history
@@ -167,16 +180,16 @@ export default async function StatsPage() {
               .map((h) => (
                 <li key={h.date}>
                   <p className="mb-1 text-sm font-extrabold capitalize">
-                    {new Date(h.date).toLocaleDateString("es-ES", { month: "long", year: "numeric", timeZone: tz })}
+                    {new Date(h.date).toLocaleDateString(dl, { month: "long", year: "numeric", timeZone: tz })}
                   </p>
                   <BarList
                     max={100}
                     unit="%"
-                    ariaLabel={`Revisión de ${new Date(h.date).toLocaleDateString("es-ES", { timeZone: tz })}`}
+                    ariaLabel={fmt(st.reviewAria, { date: new Date(h.date).toLocaleDateString(dl, { timeZone: tz }) })}
                     items={AREAS.map((a) => ({
                       key: a,
-                      label: AREA_INFO[a].short,
-                      icon: AREA_INFO[a].emoji,
+                      label: t.areas[a].short,
+                      icon: AREA_EMOJI[a],
                       value: Math.round((h.areas?.[a] ?? 0) * 100),
                     }))}
                   />

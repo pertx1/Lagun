@@ -2,9 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { partsInTz, safeTz } from "@/lib/dates";
+import { getI18n } from "@/lib/i18n/server";
+import { DATE_LOCALE } from "@/lib/i18n/config";
 import { JarClient, type JarEntry } from "./JarClient";
 
-export const metadata: Metadata = { title: "Jarra de emociones" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getI18n()).t.meta.titles.jar };
+}
 
 function shiftMonth(ym: string, delta: number) {
   const [y, m] = ym.split("-").map(Number);
@@ -14,6 +18,7 @@ function shiftMonth(ym: string, delta: number) {
 
 export default async function JarraPage({ searchParams }: PageProps<"/jarra">) {
   const { supabase, profile } = await requireProfile();
+  const { t, locale } = await getI18n();
   const tz = safeTz(profile.timezone);
   const currentYm = partsInTz(new Date(), tz).ymd.slice(0, 7);
   const sp = await searchParams;
@@ -37,24 +42,24 @@ export default async function JarraPage({ searchParams }: PageProps<"/jarra">) {
     created_at: string;
   })[];
 
-  const monthLabel = new Date(`${ym}-15T12:00:00Z`).toLocaleDateString("es-ES", { month: "long", year: "numeric" });
+  const monthLabel = new Date(`${ym}-15T12:00:00Z`).toLocaleDateString(DATE_LOCALE[locale], { month: "long", year: "numeric" });
   const isCurrent = ym === currentYm;
 
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-black">Tu jarra de emociones</h1>
-        <p className="text-muted">Cada bola es algo que sentiste. Mira cómo se va llenando con el tiempo.</p>
+        <h1 className="text-2xl font-black">{t.jar.title}</h1>
+        <p className="text-muted">{t.jar.subtitle}</p>
       </div>
-      <nav aria-label="Cambiar de mes" className="flex items-center justify-between rounded-2xl bg-surface px-2 py-1">
-        <Link href={`/jarra?mes=${shiftMonth(ym, -1)}`} className="rounded-xl p-2 font-bold text-accent" aria-label="Mes anterior">
+      <nav aria-label={t.jar.monthNav} className="flex items-center justify-between rounded-2xl bg-surface px-2 py-1">
+        <Link href={`/jarra?mes=${shiftMonth(ym, -1)}`} className="rounded-xl p-2 font-bold text-accent" aria-label={t.jar.prev}>
           ←
         </Link>
         <p className="font-extrabold capitalize" aria-live="polite">{monthLabel}</p>
         {isCurrent ? (
           <span className="w-9" />
         ) : (
-          <Link href={`/jarra?mes=${shiftMonth(ym, 1)}`} className="rounded-xl p-2 font-bold text-accent" aria-label="Mes siguiente">
+          <Link href={`/jarra?mes=${shiftMonth(ym, 1)}`} className="rounded-xl p-2 font-bold text-accent" aria-label={t.jar.next}>
             →
           </Link>
         )}

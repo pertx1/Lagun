@@ -40,7 +40,7 @@ export async function submitAssessment(raw: Answers, extras: OnboardingExtras = 
   const answers: Answers = {};
   for (const id of QUESTION_IDS) {
     const v = clampAnswer(raw?.[id]);
-    if (v === null) return { ok: false, error: "Falta alguna respuesta." };
+    if (v === null) return { ok: false, error: "missing" };
     answers[id] = v;
   }
 
@@ -73,7 +73,7 @@ export async function submitAssessment(raw: Answers, extras: OnboardingExtras = 
     primary_area: primaryArea,
     active_areas: activeAreas,
   });
-  if (error) return { ok: false, error: "No hemos podido guardar tus respuestas. Inténtalo de nuevo." };
+  if (error) return { ok: false, error: "save" };
 
   const { data: earned } = await supabase.rpc("award_points", { p_type: "assessment" });
   revalidatePath("/", "layout");

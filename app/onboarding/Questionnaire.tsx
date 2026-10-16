@@ -2,11 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
-import { FREQUENCY_LABELS, QUESTIONS, type QuestionItem } from "@/lib/questionnaire";
+import { QUESTIONS, type QuestionItem } from "@/lib/questionnaire";
 import { isSafetyConcern, scoreAssessment, type Answers } from "@/lib/scoring";
 import type { CountryResources } from "@/config/safety";
 import { AREAS, type Area, type FrogState } from "@/lib/types";
-import { AREA_INFO } from "@/config/areas";
+import { AREA_EMOJI } from "@/config/areas";
+import { LOCALES, LOCALE_NAMES, type Locale } from "@/lib/i18n/config";
+import { useI18n } from "@/lib/i18n/client";
+import { setLocale } from "@/app/i18n-actions";
 import { Frog } from "@/components/Frog/Frog";
 import type { FrogMood } from "@/components/Frog/palette";
 import { HelpResources } from "@/components/ui/HelpResources";
@@ -15,6 +18,7 @@ import { submitAssessment } from "./actions";
 
 type Step =
   | { kind: "intro" }
+  | { kind: "language" }
   | { kind: "name" }
   | { kind: "timezone" }
   | { kind: "checkin" }
@@ -22,26 +26,6 @@ type Step =
   | { kind: "areas" };
 
 const SEGMENTS = 5;
-
-/** Lo que dice Igel mientras se responden las preguntas (sin presión). */
-function questionBubble(q: QuestionItem, n: number, name: string): string {
-  if (n === 0) return "Ahora unas preguntas sobre cómo te sientes últimamente. No hay respuestas buenas ni malas.";
-  if (q.group === "safety") return "Esta es importante. Respóndela con sinceridad: estoy aquí contigo, pase lo que pase.";
-  if (q.id === "G2") return "Ya casi estamos. ¡Lo estás haciendo genial!";
-  const lines = [
-    `Gracias por contármelo, ${name}.`,
-    "Tómate tu tiempo, no hay prisa.",
-    "Vas muy bien. 💚",
-    "Responde lo primero que sientas.",
-    "Ya queda menos.",
-    "Esto me ayuda a preparar tu rincón.",
-  ];
-  return lines[n % lines.length];
-}
-
-function hours() {
-  return Array.from({ length: 24 }, (_, h) => h);
-}
 
 export function Questionnaire({
   name: initialName,
@@ -59,11 +43,14 @@ export function Questionnaire({
   initialCheckinHour: number;
 }) {
   const router = useRouter();
+  const { t, f, locale } = useI18n();
+  const o = t.onboarding;
+
   const steps = useMemo<Step[]>(() => {
     const qs: Step[] = QUESTIONS.map((q, n) => ({ kind: "question", q, n }));
     return isReassessment
       ? [{ kind: "intro" }, ...qs, { kind: "areas" }]
-      : [{ kind: "name" }, { kind: "timezone" }, { kind: "checkin" }, ...qs, { kind: "areas" }];
+      : [{ kind: "language" }, { kind: "name" }, { kind: "timezone" }, { kind: "checkin" }, ...qs, { kind: "areas" }];
   }, [isReassessment]);
 
   const [i, setI] = useState(0);
@@ -76,6 +63,7 @@ export function Questionnaire({
   const [support, setSupport] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const [switching, startSwitch] = useTransition();
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   const step = steps[i];
@@ -93,6 +81,15 @@ export function Questionnaire({
   const currentTz = tz ?? detectedTz;
   const preview = useMemo(() => scoreAssessment(answers), [answers]);
   const selectedAreas = chosen ?? preview.activeAreas;
+
+  function chooseLanguage(l: Locale) {
+    if (l === locale) return;
+    // Cambia el idioma al momento; el estado del onboarding se conserva.
+    startSwitch(async () => {
+      await setLocale(l);
+      router.refresh();
+    });
+  }
 
   function next() {
     setError(null);
@@ -127,7 +124,7 @@ export function Questionnaire({
             },
       );
       if (!res.ok) {
-        setError(res.error ?? "Algo ha fallado. Inténtalo de nuevo.");
+        setError(res.error === "missing" ? o.missing : res.error === "save" ? o.saveError : o.errorGeneric);
         return;
       }
       router.push("/home");
@@ -142,35 +139,48 @@ export function Questionnaire({
   let subtitle: ReactNode = null;
   let body: ReactNode = null;
   let canContinue = true;
-  let cta = "Continuar";
+  let cta = t.common.continue;
 
   if (support) {
     mood = "calm";
-    bubble = `Gracias por contármelo, ${displayName}. Lo que sientes importa mucho.`;
-    title = "No estás solo/a";
-    subtitle =
-      "Hay personas preparadas para escucharte ahora mismo, gratis y sin juzgarte. Llamar o escribir puede ayudar más de lo que parece.";
+    bubble = f(o.support.bubble, { name: displayName });
+    title = o.support.title;
+    subtitle = o.support.subtitle;
     body = <HelpResources resources={resources} compact />;
-    cta = "Seguir con Lagun";
+    cta = o.support.cta;
   } else if (step.kind === "intro") {
-    bubble = `¡Hola de nuevo, ${displayName}! Ha pasado un mes. ¿Vemos cómo estás ahora?`;
-    title = "Revisión mensual";
-    subtitle = "Unas preguntas cortas para ajustar tu inicio. Tus estadísticas se quedan tal cual.";
-    cta = "Empezar";
+    bubble = f(o.intro.bubble, { name: displayName });
+    title = o.intro.title;
+    subtitle = o.intro.subtitle;
+    cta = o.intro.cta;
+  } else if (step.kind === "language") {
+    bubble = o.language.bubble;
+    title = o.language.title;
+    subtitle = o.language.subtitle;
+    body = (
+      <Choices
+        label={o.language.title}
+        options={LOCALES.map((l) => LOCALE_NAMES[l])}
+        langs={[...LOCALES]}
+        value={LOCALES.indexOf(locale)}
+        onChange={(v) => chooseLanguage(LOCALES[v])}
+      />
+    );
+    canContinue = !switching;
   } else if (step.kind === "name") {
-    bubble = "¡Hola! Soy Igel, tu rana compañera. Estoy aquí para cuando lo necesites. ¿Cómo te llamas?";
-    title = "¡Hola! 👋";
-    subtitle = "Bienvenido/a a Lagun. ¿Cómo quieres que te llame?";
+    bubble = o.name.bubble;
+    title = o.name.title;
+    subtitle = o.name.subtitle;
     body = (
       <>
         <label htmlFor="ob-name" className="sr-only">
-          Tu nombre
+          {o.name.placeholder}
         </label>
         <input
           id="ob-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Tu nombre"
+          placeholder={o.name.placeholder}
           maxLength={40}
           autoComplete="nickname"
           className={inputClass}
@@ -180,9 +190,9 @@ export function Questionnaire({
     );
     canContinue = name.trim().length > 0;
   } else if (step.kind === "timezone") {
-    bubble = `Encantado, ${displayName}. Dime tu zona horaria y sabré cuándo empieza y acaba tu día.`;
-    title = "Tu zona horaria";
-    subtitle = "La hemos detectado automáticamente. Sirve para calcular tu «hoy» y la hora de los avisos.";
+    bubble = f(o.timezone.bubble, { name: displayName });
+    title = o.timezone.title;
+    subtitle = o.timezone.subtitle;
     const zones: string[] = (() => {
       try {
         const list = (Intl as unknown as { supportedValuesOf?: (k: string) => string[] }).supportedValuesOf?.("timeZone");
@@ -195,7 +205,7 @@ export function Questionnaire({
     body = (
       <div className="flex flex-col gap-3">
         <label htmlFor="ob-tz" className="sr-only">
-          Zona horaria
+          {o.timezone.label}
         </label>
         <select id="ob-tz" value={currentTz} onChange={(e) => setTz(e.target.value)} className={inputClass}>
           {zones.map((z) => (
@@ -205,29 +215,29 @@ export function Questionnaire({
           ))}
         </select>
         <button type="button" onClick={() => setTz(detectedTz)} className="self-center font-bold text-accent">
-          Usar la de este dispositivo
+          {o.timezone.useDevice}
         </button>
       </div>
     );
   } else if (step.kind === "checkin") {
-    bubble = "Si quieres, por la noche te pregunto qué tal ha ido el día. Solo si te apetece, nunca es obligatorio.";
-    title = "Tu momento del día";
-    subtitle = "Un check-in suave al final del día. Podrás cambiarlo cuando quieras en Ajustes.";
+    bubble = o.checkin.bubble;
+    title = o.checkin.title;
+    subtitle = o.checkin.subtitle;
     body = (
       <div className="flex flex-col gap-4">
         <Choices
-          label="¿Quieres el check-in de fin de día?"
-          options={["🌙 Sí, pregúntame", "🙅 Ahora no"]}
+          label={o.checkin.question}
+          options={[o.checkin.yes, o.checkin.no]}
           value={checkin === null ? null : checkin ? 0 : 1}
           onChange={(v) => setCheckin(v === 0)}
         />
         {checkin && (
           <div className="animate-fade-up">
             <label htmlFor="ob-hour" className="mb-1.5 block text-xs font-extrabold uppercase tracking-wide text-muted">
-              🌙 Hora del check-in
+              {o.checkin.hour}
             </label>
             <select id="ob-hour" value={hour} onChange={(e) => setHour(Number(e.target.value))} className={inputClass}>
-              {hours().map((h) => (
+              {Array.from({ length: 24 }, (_, h) => (
                 <option key={h} value={h}>
                   {String(h).padStart(2, "0")}:00
                 </option>
@@ -240,14 +250,22 @@ export function Questionnaire({
     canContinue = checkin !== null;
   } else if (step.kind === "question") {
     const { q, n } = step;
+    const qt = o.questions;
     mood = q.group === "safety" ? "calm" : "happy";
-    bubble = questionBubble(q, n, displayName);
-    title = q.text;
-    subtitle = `Pregunta ${n + 1} de ${QUESTIONS.length}`;
+    bubble =
+      n === 0
+        ? qt.first
+        : q.group === "safety"
+          ? qt.safety
+          : q.id === "G2"
+            ? qt.almost
+            : f(qt.encouragements[n % qt.encouragements.length], { name: displayName });
+    title = t.questionnaire.items[q.id];
+    subtitle = f(qt.counter, { n: n + 1, total: QUESTIONS.length });
     body = (
       <Choices
-        label={q.text}
-        options={[...(q.labels ?? FREQUENCY_LABELS)]}
+        label={t.questionnaire.items[q.id]}
+        options={q.scale === "mood" ? t.questionnaire.moodScale : t.questionnaire.frequency}
         value={answers[q.id] ?? null}
         onChange={(v) => setAnswers((a) => ({ ...a, [q.id]: v }))}
       />
@@ -255,14 +273,11 @@ export function Questionnaire({
     canContinue = answers[q.id] !== undefined;
   } else if (step.kind === "areas") {
     mood = "excited";
-    bubble =
-      preview.activeAreas.length > 0
-        ? `¡Gracias, ${displayName}! Por lo que me has contado, creo que puedo ayudarte con esto.`
-        : `¡Gracias, ${displayName}! Parece que las cosas van bastante bien. Elige lo que te apetezca explorar.`;
-    title = "Tus temas";
-    subtitle = "Tu inicio se prepara con lo que elijas. Los revisaremos juntos cada mes.";
+    bubble = f(preview.activeAreas.length > 0 ? o.areas.bubbleSome : o.areas.bubbleNone, { name: displayName });
+    title = o.areas.title;
+    subtitle = o.areas.subtitle;
     body = (
-      <div role="group" aria-label="Tus temas" className="flex flex-col gap-3">
+      <div role="group" aria-label={o.areas.title} className="flex flex-col gap-3">
         {AREAS.map((a) => {
           const on = selectedAreas.includes(a);
           return (
@@ -277,11 +292,11 @@ export function Questionnaire({
               }`}
             >
               <span aria-hidden className="text-2xl">
-                {AREA_INFO[a].emoji}
+                {AREA_EMOJI[a]}
               </span>
               <span className="flex-1">
-                <span className="block font-extrabold">{AREA_INFO[a].label}</span>
-                <span className="block text-sm text-muted">{AREA_INFO[a].blurb}</span>
+                <span className="block font-extrabold">{t.areas[a].label}</span>
+                <span className="block text-sm text-muted">{t.areas[a].blurb}</span>
               </span>
               <Dot on={on} square />
             </button>
@@ -289,7 +304,7 @@ export function Questionnaire({
         })}
       </div>
     );
-    cta = "Terminar";
+    cta = o.areas.cta;
   }
 
   return (
@@ -297,7 +312,7 @@ export function Questionnaire({
       {/* Cabecera: volver + progreso por segmentos */}
       <div className="flex h-11 items-center gap-3 pr-24">
         {i > 0 || support ? (
-          <button type="button" onClick={back} className="-ml-2 rounded-full p-2 text-accent hover:bg-surface" aria-label="Atrás">
+          <button type="button" onClick={back} className="-ml-2 rounded-full p-2 text-accent hover:bg-surface" aria-label={t.common.back}>
             <svg aria-hidden viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 5l-7 7 7 7" />
             </svg>
@@ -307,7 +322,7 @@ export function Questionnaire({
         )}
         <div
           role="progressbar"
-          aria-label="Progreso"
+          aria-label={o.progress}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(progress * 100)}
@@ -325,10 +340,10 @@ export function Questionnaire({
       </div>
 
       {/* Igel habla */}
-      <div className="mt-6 flex items-start gap-3" key={`b-${i}-${support}`}>
+      <div className="mt-6 flex items-start gap-3" key={`b-${i}-${support}-${locale}`}>
         <Frog state={frogState} mood={mood} size={64} label="" className="shrink-0" />
         <p className="animate-fade-up rounded-2xl rounded-tl-sm bg-surface-2 px-4 py-3 text-[0.95rem] font-semibold leading-snug" aria-live="polite">
-          <span className="sr-only">Igel dice: </span>
+          <span className="sr-only">{o.igelSays}</span>
           {bubble}
         </p>
       </div>
@@ -356,11 +371,11 @@ export function Questionnaire({
           disabled={!canContinue || pending}
           className="min-h-13 w-full rounded-2xl bg-primary text-lg font-extrabold text-on-primary shadow-soft transition-opacity disabled:opacity-50"
         >
-          {pending ? "Guardando…" : cta}
+          {pending ? t.common.saving : cta}
         </button>
         {step.kind === "intro" && !mandatory && (
           <button type="button" onClick={() => router.push("/home")} className="mt-2 w-full py-2 font-bold text-muted">
-            Ahora no
+            {o.intro.notNow}
           </button>
         )}
       </div>
@@ -387,11 +402,14 @@ function Choices({
   options,
   value,
   onChange,
+  langs,
 }: {
   label: string;
   options: string[];
   value: number | null;
   onChange: (v: number) => void;
+  /** Atributo lang de cada opción (para lectores de pantalla). */
+  langs?: string[];
 }) {
   return (
     <div role="radiogroup" aria-label={label} className="flex flex-col gap-3">
@@ -403,6 +421,7 @@ function Choices({
             type="button"
             role="radio"
             aria-checked={on}
+            lang={langs?.[v]}
             onClick={() => onChange(v)}
             className={`flex min-h-13 items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left text-lg font-bold transition-colors ${
               on ? "border-primary bg-surface-2" : "border-line bg-surface hover:bg-surface-2"

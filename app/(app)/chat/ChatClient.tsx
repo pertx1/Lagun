@@ -9,7 +9,8 @@ import type { FrogState } from "@/lib/types";
 import { Frog } from "@/components/Frog/Frog";
 import { CrisisSheet } from "@/components/ui/CrisisSheet";
 import { inputClass } from "@/components/ui/Field";
-import { TOPIC_LABELS, type ChatTopic } from "@/lib/companion-knowledge";
+import { CHAT_TOPICS, TOPIC_EMOJI, type ChatTopic } from "@/lib/companion-knowledge";
+import { useI18n } from "@/lib/i18n/client";
 
 interface Msg {
   id: number;
@@ -34,11 +35,13 @@ export function ChatClient({
   initialTopic: ChatTopic;
 }) {
   const router = useRouter();
+  const { t: d, f } = useI18n();
+  const c = d.chat;
   const [topic, setTopic] = useState<ChatTopic>(initialTopic);
   const greetingFor = (t: ChatTopic): Msg => ({
     id: 0,
     role: "assistant",
-    content: `Hola, ${name} 🐸 Soy Igel. ${TOPIC_LABELS[t].greeting}`,
+    content: f(c.hello, { name, greeting: c.topics[t].greeting }),
   });
   const greeting = greetingFor(topic);
   const [messages, setMessages] = useState<Msg[]>([greeting]);
@@ -120,7 +123,7 @@ export function ChatClient({
         {
           id: nextId.current++,
           role: "assistant",
-          content: data.reply || "Perdona, algo ha fallado. ¿Lo intentamos otra vez?",
+          content: data.reply || c.errorReply,
         },
       ]);
       if (data.crisis) openCrisis();
@@ -133,7 +136,7 @@ export function ChatClient({
       if ((e as Error).name !== "AbortError") {
         setMessages((m) => [
           ...m,
-          { id: nextId.current++, role: "assistant", content: "Uy, se ha cortado la conexión. ¿Me lo repites cuando puedas?" },
+          { id: nextId.current++, role: "assistant", content: c.connection },
         ]);
       }
     } finally {
@@ -148,8 +151,8 @@ export function ChatClient({
 
   return (
     <div className="flex min-h-[calc(100dvh-13rem)] flex-col">
-      <div role="radiogroup" aria-label="Tema de la conversación" className="-mx-1 mb-3 flex gap-2 overflow-x-auto px-1 pb-1">
-        {(Object.keys(TOPIC_LABELS) as ChatTopic[]).map((t) => (
+      <div role="radiogroup" aria-label={c.topicAria} className="-mx-1 mb-3 flex gap-2 overflow-x-auto px-1 pb-1">
+        {CHAT_TOPICS.map((t) => (
           <button
             key={t}
             type="button"
@@ -164,7 +167,7 @@ export function ChatClient({
               topic === t ? "bg-primary text-on-primary" : "bg-surface text-fg"
             }`}
           >
-            <span aria-hidden>{TOPIC_LABELS[t].emoji}</span> {TOPIC_LABELS[t].label}
+            <span aria-hidden>{TOPIC_EMOJI[t]}</span> {c.topics[t].label}
           </button>
         ))}
       </div>
@@ -172,12 +175,11 @@ export function ChatClient({
       <div className="mb-3 flex items-start gap-3 rounded-2xl bg-surface p-3 text-sm">
         <span aria-hidden className="text-xl">🔒</span>
         <p>
-          <strong>Esta conversación no se guarda.</strong> Al salir, se borra. Igel te escucha y acompaña, pero no es
-          psicólogo/a ni sustituye ayuda profesional.
+          <strong>{c.privacyStrong}</strong> {c.privacy}
         </p>
       </div>
 
-      <ol ref={listRef} className="flex flex-1 flex-col gap-3" aria-live="polite" aria-label="Conversación">
+      <ol ref={listRef} className="flex flex-1 flex-col gap-3" aria-live="polite" aria-label={c.listAria}>
         {messages.map((m) => (
           <li key={m.id} className={`flex items-end gap-2 ${m.role === "user" ? "justify-end" : ""}`}>
             {m.role === "assistant" && <Frog state={frogState} size={34} animate={false} mood="calm" label="" />}
@@ -186,16 +188,16 @@ export function ChatClient({
                 m.role === "user" ? "rounded-br-md bg-primary text-on-primary" : "rounded-bl-md bg-surface"
               }`}
             >
-              <span className="sr-only">{m.role === "user" ? "Tú: " : "Igel: "}</span>
+              <span className="sr-only">{m.role === "user" ? c.you : c.igel}</span>
               {m.content}
             </p>
           </li>
         ))}
         {sending && (
-          <li className="flex items-end gap-2" aria-label="Igel está escribiendo">
+          <li className="flex items-end gap-2" aria-label={c.typingAria}>
             <Frog state={frogState} size={34} animate={false} mood="calm" label="" />
             <p className="rounded-3xl rounded-bl-md bg-surface px-4 py-2.5 text-muted">
-              <span className="animate-pulse">escribiendo…</span>
+              <span className="animate-pulse">{c.typing}</span>
             </p>
           </li>
         )}
@@ -207,7 +209,7 @@ export function ChatClient({
           onClick={openCrisis}
           className="mt-3 rounded-2xl border-2 border-danger p-2 text-sm font-bold text-danger"
         >
-          Ver teléfonos de ayuda
+          {c.phones}
         </button>
       )}
 
@@ -219,7 +221,7 @@ export function ChatClient({
         }}
       >
         <label htmlFor="chat-input" className="sr-only">
-          Escribe tu mensaje
+          {c.inputLabel}
         </label>
         <textarea
           id="chat-input"
@@ -233,7 +235,7 @@ export function ChatClient({
           }}
           rows={1}
           maxLength={2000}
-          placeholder="Escribe aquí…"
+          placeholder={c.placeholder}
           autoComplete="off"
           className={`${inputClass} max-h-32 resize-none`}
         />
@@ -241,13 +243,13 @@ export function ChatClient({
           type="submit"
           disabled={!draft.trim() || sending}
           className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary text-xl text-on-primary disabled:opacity-50"
-          aria-label="Enviar"
+          aria-label={c.send}
         >
           ➤
         </button>
       </form>
       <button type="button" onClick={close} className="mt-2 self-center text-sm font-bold text-muted underline">
-        Cerrar y borrar conversación
+        {c.closeWipe}
       </button>
 
       <CrisisSheet open={crisisOpen} onClose={() => setCrisisOpen(false)} resources={resources} />

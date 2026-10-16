@@ -5,12 +5,14 @@ import { awardActivity } from "@/app/actions";
 import { Button } from "@/components/ui/Button";
 import { inputClass } from "@/components/ui/Field";
 import { PointsToast } from "./PointsToast";
+import { useI18n } from "@/lib/i18n/client";
 
 /**
  * Espacio para desahogarse. Lo que se escribe NO se guarda ni se envía a
  * ningún sitio: al pulsar "Soltar", desaparece.
  */
 export function VentSpace() {
+  const { t } = useI18n();
   const [text, setText] = useState("");
   const [releasing, setReleasing] = useState(false);
   const [points, setPoints] = useState<number | null>(null);
@@ -28,7 +30,7 @@ export function VentSpace() {
   return (
     <div className="flex flex-col gap-2">
       <label htmlFor="vent" className="text-sm text-muted">
-        Escribe lo que necesites soltar. No se guarda en ningún sitio: cuando pulses “Soltar”, se va.
+        {t.soc.ventLabel}
       </label>
       <textarea
         id="vent"
@@ -40,9 +42,9 @@ export function VentSpace() {
         spellCheck={false}
       />
       <Button variant="secondary" onClick={release} disabled={!text.trim() || releasing}>
-        🎈 Soltar
+        {t.soc.release}
       </Button>
-      <PointsToast points={points} text="Soltado. A veces sacarlo ya alivia un poquito." />
+      <PointsToast points={points} text={t.soc.ventDone} />
     </div>
   );
 }

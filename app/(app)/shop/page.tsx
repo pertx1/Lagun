@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import { getI18n } from "@/lib/i18n/server";
 import { requireProfile } from "@/lib/auth";
 import type { ShopItem } from "@/lib/types";
 import { ShopClient } from "./ShopClient";
 
-export const metadata: Metadata = { title: "Igel" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getI18n()).t.meta.titles.shop };
+}
 
 export default async function ShopPage() {
   const { supabase, profile } = await requireProfile();

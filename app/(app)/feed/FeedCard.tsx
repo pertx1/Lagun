@@ -3,21 +3,18 @@
 import { useOptimistic, useState, useTransition } from "react";
 import { awardActivity, toggleFavorite } from "@/app/actions";
 import type { FeedPost } from "@/lib/types";
-import { AREA_INFO } from "@/config/areas";
+import { AREA_EMOJI } from "@/config/areas";
+import { useI18n } from "@/lib/i18n/client";
 import { PointsToast } from "@/components/modules/PointsToast";
 
-const TYPE = {
-  frase: { label: "Frase", icon: "💭" },
-  historia: { label: "Historia", icon: "📖" },
-  consejo: { label: "Consejo", icon: "💡" },
-} as const;
+const TYPE_ICON = { frase: "💭", historia: "📖", consejo: "💡" } as const;
 
 export function FeedCard({ post, favorite }: { post: FeedPost; favorite: boolean }) {
   const [fav, setFav] = useOptimistic(favorite);
   const [, start] = useTransition();
   const [points, setPoints] = useState<number | null>(null);
-  const t = TYPE[post.type];
-  const area = post.area === "general" ? null : AREA_INFO[post.area];
+  const { t, f } = useI18n();
+  const area = post.area === "general" ? null : post.area;
 
   return (
     <article
@@ -26,17 +23,17 @@ export function FeedCard({ post, favorite }: { post: FeedPost; favorite: boolean
     >
       <div className="mb-2 flex items-center gap-2 text-xs font-bold text-muted">
         <span>
-          <span aria-hidden>{t.icon}</span> {t.label}
+          <span aria-hidden>{TYPE_ICON[post.type]}</span> {t.feed.types[post.type]}
         </span>
         {area && (
           <span>
-            · <span aria-hidden>{area.emoji}</span> {area.short}
+            · <span aria-hidden>{AREA_EMOJI[area]}</span> {t.areas[area].short}
           </span>
         )}
         <button
           type="button"
           aria-pressed={fav}
-          aria-label={fav ? `Quitar "${post.title}" de guardados` : `Guardar "${post.title}"`}
+          aria-label={f(fav ? t.feed.unsaveAria : t.feed.saveAria, { title: post.title })}
           onClick={() =>
             start(async () => {
               setFav(!fav);
@@ -60,10 +57,10 @@ export function FeedCard({ post, favorite }: { post: FeedPost; favorite: boolean
               onClick={() => awardActivity("story").then(setPoints)}
               className="text-sm font-bold text-accent underline"
             >
-              La he leído 💚
+              {t.feed.read}
             </button>
           ) : (
-            <PointsToast points={points} text="Gracias por leerla." />
+            <PointsToast points={points} text={t.feed.readDone} />
           )}
         </div>
       )}

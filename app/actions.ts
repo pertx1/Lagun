@@ -6,6 +6,7 @@ import { requireProfile } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { EMOTION_BY_KEY, type EmotionKey } from "@/config/emotions";
 import { RESOURCES } from "@/config/safety";
+import { getI18n } from "@/lib/i18n/server";
 import type { ActivityType, FrogCategory, Theme } from "@/lib/types";
 
 const ACTIVITY_TYPES: ActivityType[] = [
@@ -80,12 +81,13 @@ export async function buyItem(itemId: string) {
   const { error } = await supabase.rpc("buy_item", { p_item: itemId });
   revalidatePath("/", "layout");
   if (error) {
-    const msg = error.message.includes("insuficientes")
-      ? "Aún te faltan algunas hojas. ¡Sin prisa!"
+    // Código de error; el texto lo pone la interfaz en el idioma de la persona.
+    const code = error.message.includes("insuficientes")
+      ? "insufficient"
       : error.message.includes("ya lo tienes")
-        ? "¡Ya es tuyo!"
-        : "No se ha podido comprar.";
-    return { ok: false as const, error: msg };
+        ? "owned"
+        : "failed";
+    return { ok: false as const, error: code };
   }
   return { ok: true as const };
 }
@@ -164,7 +166,8 @@ export async function removePushSubscriptions() {
 
 /** Derecho de supresión (RGPD): borra la cuenta y, en cascada, todos sus datos. */
 export async function deleteAccount(form: FormData) {
-  if (String(form.get("confirm") ?? "").trim().toUpperCase() !== "BORRAR") return;
+  const { t } = await getI18n();
+  if (String(form.get("confirm") ?? "").trim().toUpperCase() !== t.settings.deleteWord.toUpperCase()) return;
   const { supabase, userId } = await requireProfile({ allowNotOnboarded: true });
   const admin = createAdminClient();
   const { error } = await admin.auth.admin.deleteUser(userId);

@@ -5,14 +5,15 @@ import { buyItem, equipItem } from "@/app/actions";
 import type { FrogCategory, FrogState, ShopItem } from "@/lib/types";
 import { Frog } from "@/components/Frog/Frog";
 import { Button } from "@/components/ui/Button";
+import { useI18n } from "@/lib/i18n/client";
 
-const CATEGORIES: { key: FrogCategory; label: string; icon: string }[] = [
-  { key: "color", label: "Color", icon: "🎨" },
-  { key: "hat", label: "Gorros", icon: "🧢" },
-  { key: "glasses", label: "Gafas", icon: "👓" },
-  { key: "outfit", label: "Ropa", icon: "🧣" },
-  { key: "accessory", label: "Cositas", icon: "🍵" },
-  { key: "corner", label: "Rincón", icon: "🪷" },
+const CATEGORIES: { key: FrogCategory; icon: string }[] = [
+  { key: "color", icon: "🎨" },
+  { key: "hat", icon: "🧢" },
+  { key: "glasses", icon: "👓" },
+  { key: "outfit", icon: "🧣" },
+  { key: "accessory", icon: "🍵" },
+  { key: "corner", icon: "🪷" },
 ];
 
 export function ShopClient({
@@ -26,6 +27,9 @@ export function ShopClient({
   points: number;
   frogState: FrogState;
 }) {
+  const { t, f } = useI18n();
+  const sh = t.shop;
+  const nameOf = (it: ShopItem) => sh.items[it.id] ?? it.name;
   const [cat, setCat] = useState<FrogCategory>("color");
   const [state, setState] = useState<FrogState>(frogState);
   const [preview, setPreview] = useState<ShopItem | null>(null);
@@ -59,13 +63,13 @@ export function ShopClient({
     start(async () => {
       const res = await buyItem(it.id);
       if (!res.ok) {
-        setMsg(res.error);
+        setMsg(res.error === "insufficient" ? sh.notEnough : res.error === "owned" ? sh.owned : sh.failed);
         return;
       }
       setOwned((o) => new Set(o).add(it.id));
       setPoints((p) => p - it.cost);
       setHop((h) => h + 1);
-      setMsg(`¡${it.name} es tuyo! 🎉`);
+      setMsg(f(sh.bought, { name: nameOf(it) }));
       equip(it, it.category);
     });
   }
@@ -76,16 +80,16 @@ export function ShopClient({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col items-center rounded-3xl bg-surface p-4">
-        <Frog key={hop} state={shown} size={190} withCorner hop={hop > 0} label="Igel con lo que lleva puesto" />
+        <Frog key={hop} state={shown} size={190} withCorner hop={hop > 0} label={sh.frogAria} />
         <p className="mt-2 text-lg font-black" aria-live="polite">
-          🍃 {points} hojas
+          {f(sh.leaves, { n: points })}
         </p>
         <p className="text-center text-sm text-muted">
-          Las hojas se ganan cuidándote (respirar, guardar emociones, retos…), nunca por entrar cada día.
+          {sh.howToEarn}
         </p>
       </div>
 
-      <div role="tablist" aria-label="Categorías" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+      <div role="tablist" aria-label={sh.categoriesAria} className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         {CATEGORIES.map((c) => (
           <button
             key={c.key}
@@ -99,7 +103,7 @@ export function ShopClient({
               cat === c.key ? "bg-primary text-on-primary" : "bg-surface text-fg"
             }`}
           >
-            <span aria-hidden>{c.icon}</span> {c.label}
+            <span aria-hidden>{c.icon}</span> {sh.categories[c.key]}
           </button>
         ))}
       </div>
@@ -120,22 +124,22 @@ export function ShopClient({
                 type="button"
                 onClick={() => setPreview(preview?.id === it.id ? null : it)}
                 className="rounded-2xl"
-                aria-label={`Probar ${it.name}`}
+                aria-label={f(sh.tryAria, { name: nameOf(it) })}
               >
                 <Frog state={{ ...state, [it.category]: it.id }} size={90} animate={false} withCorner={cat === "corner"} label="" />
               </button>
-              <p className="text-center font-bold leading-tight">{it.name}</p>
+              <p className="text-center font-bold leading-tight">{nameOf(it)}</p>
               {equipped ? (
                 cat !== "color" ? (
                   <Button variant="secondary" className="w-full text-sm" disabled={pending} onClick={() => equip(null, cat)}>
-                    Quitar
+                    {sh.remove}
                   </Button>
                 ) : (
-                  <p className="text-sm font-bold text-accent">Puesto</p>
+                  <p className="text-sm font-bold text-accent">{sh.worn}</p>
                 )
               ) : mine ? (
                 <Button className="w-full text-sm" disabled={pending} onClick={() => equip(it, cat)}>
-                  Ponérselo
+                  {sh.wear}
                 </Button>
               ) : (
                 <Button
@@ -143,7 +147,7 @@ export function ShopClient({
                   className="w-full text-sm"
                   disabled={pending || points < it.cost}
                   onClick={() => buy(it)}
-                  aria-label={`Comprar ${it.name} por ${it.cost} hojas`}
+                  aria-label={f(sh.buyAria, { name: nameOf(it), cost: it.cost })}
                 >
                   🍃 {it.cost}
                 </Button>
