@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 
 const ITEMS = [
   { href: "/home", label: "Inicio", icon: "🏠" },
-  { href: "/jarra", label: "Jarra", icon: "🫙" },
-  { href: "/chat", label: "Hablar", icon: "💬" },
-  { href: "/feed", label: "Feed", icon: "🌱" },
-  { href: "/stats", label: "Progreso", icon: "📈" },
+  { href: "/area/acad", label: "Estudios", icon: "📚" },
+  { href: "/area/soc", label: "Social", icon: "🫶" },
+  { href: "/area/fam", label: "Familia", icon: "🏡" },
+  { href: "/area/iden", label: "Identidad", icon: "🌈" },
 ];
 
 export function BottomNav() {
@@ -27,7 +27,7 @@ export function BottomNav() {
               <Link
                 href={it.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-xs font-bold ${
+                className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-[0.7rem] font-bold ${
                   active ? "text-accent" : "text-muted"
                 }`}
               >

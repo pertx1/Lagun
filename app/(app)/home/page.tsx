@@ -2,19 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { partsInTz, safeTz, daysBetween, greeting } from "@/lib/dates";
-import { AREAS, type Area, type Exam } from "@/lib/types";
 import { AREA_INFO } from "@/config/areas";
-import { getResources } from "@/config/safety";
 import { Frog } from "@/components/Frog/Frog";
 import { moodFromScore } from "@/components/Frog/palette";
 import { ModuleCard } from "@/components/modules/ModuleCard";
 import { MoodCheckin } from "@/components/modules/MoodCheckin";
 import { BreathingExercise } from "@/components/modules/BreathingExercise";
 import { Grounding } from "@/components/modules/Grounding";
-import { AcadModule } from "@/components/modules/AcadModule";
-import { SocModule } from "@/components/modules/SocModule";
-import { FamModule } from "@/components/modules/FamModule";
-import { IdenModule } from "@/components/modules/IdenModule";
 
 export const metadata: Metadata = { title: "Inicio" };
 
@@ -24,10 +18,9 @@ export default async function HomePage() {
   const now = new Date();
   const local = partsInTz(now, tz);
 
-  const [{ data: lastMood }, { data: lastActivity }, { data: exams }] = await Promise.all([
+  const [{ data: lastMood }, { data: lastActivity }] = await Promise.all([
     supabase.from("mood_checkins").select("mood, created_at").order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("activities").select("created_at").order("created_at", { ascending: false }).limit(1).maybeSingle(),
-    supabase.from("exams").select("id, subject, title, due_date").gte("due_date", local.ymd).order("due_date").limit(20),
   ]);
 
   const checkedInToday = lastMood ? partsInTz(new Date(lastMood.created_at), tz).ymd === local.ymd : false;
@@ -41,25 +34,7 @@ export default async function HomePage() {
   const lastSeenAt = lastSeen.length ? new Date(Math.max(...lastSeen.map((d) => d.getTime()))) : null;
   const welcomeBack = lastSeenAt && daysBetween(lastSeenAt, now) >= 10;
 
-  const resources = getResources(profile.country);
-  const ordered: Area[] = profile.primary_area
-    ? [profile.primary_area, ...profile.active_areas.filter((a) => a !== profile.primary_area)]
-    : profile.active_areas;
-  const others = AREAS.filter((a) => !ordered.includes(a));
   const frogMood = checkedInToday && lastMood ? moodFromScore(lastMood.mood) : "happy";
-
-  const renderArea = (a: Area) => {
-    switch (a) {
-      case "acad":
-        return <AcadModule exams={(exams ?? []) as Exam[]} today={local.ymd} />;
-      case "soc":
-        return <SocModule />;
-      case "fam":
-        return <FamModule />;
-      case "iden":
-        return <IdenModule resources={resources} />;
-    }
-  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -91,14 +66,17 @@ export default async function HomePage() {
         </h2>
         <div className="grid grid-cols-3 gap-3">
           {[
-            { href: "/jarra", icon: "🫙", label: "Guardar una emoción" },
+            { href: "/jarra", icon: "🫙", label: "Jarra de emociones" },
             { href: "/chat", icon: "💬", label: "Hablar con Igel" },
             { href: "#respirar", icon: "🫧", label: "Respirar un minuto" },
+            { href: "/feed", icon: "📰", label: "Feed" },
+            { href: "/stats", icon: "📈", label: "Progreso" },
+            { href: "/shop", icon: "🐸", label: "Igel y su tienda" },
           ].map((a) => (
             <Link
               key={a.href}
               href={a.href}
-              className="flex flex-col items-center gap-1 rounded-3xl border border-line bg-surface p-3 text-center text-sm font-bold hover:bg-surface-2"
+              className="flex aspect-square flex-col items-center justify-center gap-1 rounded-3xl border border-line bg-surface p-2 text-center text-sm font-bold leading-tight transition-transform hover:bg-surface-2 active:scale-95"
             >
               <span aria-hidden className="text-3xl">{a.icon}</span>
               {a.label}
@@ -107,20 +85,21 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {profile.active_areas.length > 0 && (
+        <nav aria-label="Tus temas" className="flex flex-wrap gap-2">
+          {profile.active_areas.map((a) => (
+            <Link key={a} href={`/area/${a}`} className="rounded-full bg-surface-2 px-4 py-2 text-sm font-bold">
+              <span aria-hidden>{AREA_INFO[a].emoji}</span> {AREA_INFO[a].label}
+            </Link>
+          ))}
+        </nav>
+      )}
+
       {!showEndOfDay && (
         <ModuleCard emoji="🌡️" title="Check-in" subtitle="Cuando quieras, las veces que quieras. Nunca es obligatorio.">
           <MoodCheckin />
         </ModuleCard>
       )}
-
-      {ordered.map((a) => (
-        <section key={a} aria-labelledby={`area-${a}`} className="flex flex-col gap-3">
-          <h2 id={`area-${a}`} className="text-xl font-extrabold">
-            <span aria-hidden>{AREA_INFO[a].emoji}</span> {AREA_INFO[a].label}
-          </h2>
-          {renderArea(a)}
-        </section>
-      ))}
 
       <div id="respirar" className="scroll-mt-20">
         <ModuleCard emoji="🫧" title="Respira conmigo" subtitle="Inspira 4, aguanta 4, suelta 6.">
@@ -132,21 +111,6 @@ export default async function HomePage() {
         <Grounding />
       </ModuleCard>
 
-      {others.length > 0 && (
-        <details className="rounded-3xl border border-line p-4">
-          <summary className="cursor-pointer text-lg font-extrabold">Explorar otros temas</summary>
-          <div className="mt-4 flex flex-col gap-6">
-            {others.map((a) => (
-              <section key={a} aria-labelledby={`other-${a}`} className="flex flex-col gap-3">
-                <h2 id={`other-${a}`} className="text-lg font-extrabold">
-                  <span aria-hidden>{AREA_INFO[a].emoji}</span> {AREA_INFO[a].label}
-                </h2>
-                {renderArea(a)}
-              </section>
-            ))}
-          </div>
-        </details>
-      )}
     </div>
   );
 }

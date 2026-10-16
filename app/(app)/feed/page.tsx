@@ -38,6 +38,11 @@ export default async function FeedPage({ searchParams }: PageProps<"/feed">) {
 
   return (
     <div className="flex flex-col gap-4">
+      {AREAS.includes(filter as Area) && (
+        <Link href={`/area/${filter}`} className="self-start font-bold text-accent">
+          ‹ {AREA_INFO[filter as Area].label}
+        </Link>
+      )}
       <div>
         <h1 className="text-2xl font-black">Para leer con calma</h1>
         <p className="text-muted">Frases, historias reales y consejos. Guarda lo que te ayude.</p>
