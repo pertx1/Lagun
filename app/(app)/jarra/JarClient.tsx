@@ -1,14 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useRef, useState } from "react";
 import { logEmotion } from "@/app/actions";
 import { EMOTIONS, EMOTION_BY_KEY, type EmotionKey } from "@/config/emotions";
 import { EmotionJar, type JarBall } from "@/components/Jar/EmotionJar";
-import { Button } from "@/components/ui/Button";
 import { PointsToast } from "@/components/modules/PointsToast";
 
-const INTENSITY = ["Un poquito", "Algo", "Bastante", "Mucho", "Muchísimo"];
 const HARD: EmotionKey[] = ["tristeza", "ansiedad", "enfado", "miedo"];
 
 export interface JarEntry {
@@ -21,28 +19,28 @@ export function JarClient({ initial, isCurrentMonth, monthLabel }: { initial: Ja
   const [balls, setBalls] = useState<JarBall[]>(() =>
     initial.map((e) => ({ id: e.id, color: e.color, label: EMOTION_BY_KEY[e.emotion]?.label ?? e.emotion })),
   );
-  const [picked, setPicked] = useState<EmotionKey | null>(null);
-  const [intensity, setIntensity] = useState(3);
-  const [pending, start] = useTransition();
-  const [result, setResult] = useState<{ points: number; emotion: EmotionKey; intensity: number } | null>(null);
+  const [result, setResult] = useState<{ points: number; emotion: EmotionKey } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const tmp = useRef(0);
 
   const counts = EMOTIONS.map((e) => ({ ...e, n: balls.filter((b) => b.color === e.color).length })).filter((e) => e.n > 0);
 
-  function save() {
-    if (!picked) return;
+  /** Un toque = una bola. Aparece al instante y se guarda en segundo plano. */
+  async function drop(emotion: EmotionKey) {
     setError(null);
-    start(async () => {
-      const res = await logEmotion(picked, intensity);
-      if (!res.ok) {
-        setError("No se ha podido guardar. Inténtalo otra vez.");
-        return;
-      }
-      setBalls((b) => [...b, { id: res.emotion.id, color: res.emotion.color, label: EMOTION_BY_KEY[picked].label, fresh: true }]);
-      setResult({ points: res.points, emotion: picked, intensity });
-      setPicked(null);
-      setIntensity(3);
-    });
+    const def = EMOTION_BY_KEY[emotion];
+    const id = `tmp-${++tmp.current}`;
+    setBalls((b) => [...b, { id, color: def.color, label: def.label, fresh: true }]);
+    try {
+      navigator.vibrate?.(15);
+    } catch {}
+    const res = await logEmotion(emotion, 3);
+    if (!res.ok) {
+      setBalls((b) => b.filter((x) => x.id !== id));
+      setError("No se ha podido guardar. Inténtalo otra vez.");
+      return;
+    }
+    setResult({ points: res.points, emotion });
   }
 
   return (
@@ -64,9 +62,9 @@ export function JarClient({ initial, isCurrentMonth, monthLabel }: { initial: Ja
       {result && (
         <div className="flex flex-col gap-2 animate-fade-up">
           <PointsToast points={result.points} text={`${EMOTION_BY_KEY[result.emotion].emoji} Guardada en tu jarra.`} />
-          {HARD.includes(result.emotion) && result.intensity >= 4 && (
+          {HARD.includes(result.emotion) && (
             <p className="rounded-2xl bg-warm p-3 text-sm">
-              Parece que pesa bastante ahora mismo. ¿Te apetece{" "}
+              Si te pesa, ¿te apetece{" "}
               <Link href="/chat" className="font-bold text-accent underline">hablarlo con Igel</Link> o{" "}
               <Link href="/home#respirar" className="font-bold text-accent underline">respirar un minuto</Link>? Y si lo
               necesitas, aquí tienes <Link href="/ayuda" className="font-bold text-accent underline">ayuda</Link>.
@@ -80,16 +78,15 @@ export function JarClient({ initial, isCurrentMonth, monthLabel }: { initial: Ja
           <h2 id="add-h" className="text-xl font-extrabold">
             ¿Qué sientes ahora?
           </h2>
-          <div className="grid grid-cols-4 gap-2" role="group" aria-label="Elige una emoción">
+          <p className="-mt-2 text-sm text-muted">Toca una emoción y caerá en tu jarra.</p>
+          <div className="grid grid-cols-4 gap-2" role="group" aria-label="Toca una emoción para guardarla en la jarra">
             {EMOTIONS.map((e) => (
               <button
                 key={e.key}
                 type="button"
-                aria-pressed={picked === e.key}
-                onClick={() => setPicked(e.key)}
-                className={`flex flex-col items-center gap-1 rounded-2xl border-2 p-2 text-xs font-bold ${
-                  picked === e.key ? "border-primary bg-surface-2" : "border-line bg-bg"
-                }`}
+                onClick={() => drop(e.key)}
+                aria-label={`Guardar ${e.label} en la jarra`}
+                className="flex flex-col items-center gap-1 rounded-2xl border-2 border-line bg-bg p-2 text-xs font-bold transition-transform hover:bg-surface-2 active:scale-90"
               >
                 <span aria-hidden className="grid size-9 place-items-center rounded-full text-xl" style={{ background: e.color }}>
                   {e.emoji}
@@ -98,26 +95,6 @@ export function JarClient({ initial, isCurrentMonth, monthLabel }: { initial: Ja
               </button>
             ))}
           </div>
-          {picked && (
-            <div className="flex flex-col gap-2 animate-fade-up">
-              <label htmlFor="intensity" className="font-bold">
-                ¿Cuánto? <span className="font-normal">{INTENSITY[intensity - 1]}</span>
-              </label>
-              <input
-                id="intensity"
-                type="range"
-                min={1}
-                max={5}
-                value={intensity}
-                onChange={(e) => setIntensity(Number(e.target.value))}
-                aria-valuetext={INTENSITY[intensity - 1]}
-                className="accent-[var(--primary)]"
-              />
-              <Button onClick={save} disabled={pending}>
-                {pending ? "Guardando…" : "Dejar caer en la jarra"}
-              </Button>
-            </div>
-          )}
           {error && <p role="alert" className="text-danger">{error}</p>}
           <p className="text-sm text-muted">Todas las emociones valen. No hay emociones buenas ni malas: todas te cuentan algo.</p>
         </section>
