@@ -6,6 +6,8 @@ import type { Area } from "@/lib/types";
 import { describeUser, isChatTopic, type ChatTopic } from "@/lib/companion-knowledge";
 import { EMOTION_BY_KEY, type EmotionKey } from "@/config/emotions";
 import { daysUntil, partsInTz, safeTz } from "@/lib/dates";
+import { loadStudyPatterns } from "@/lib/patterns-data";
+import { describePatternsForAI } from "@/lib/patterns";
 
 /**
  * Chat con IA. EFÍMERO: no se guarda ni se registra el contenido.
@@ -68,7 +70,7 @@ export async function POST(req: Request) {
   const tz = safeTz(profile?.timezone);
   const today = partsInTz(new Date(), tz).ymd;
   const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
-  const [{ data: moods }, { data: emotions }, { data: exams }, { data: posts }] = await Promise.all([
+  const [{ data: moods }, { data: emotions }, { data: exams }, { data: posts }, patterns] = await Promise.all([
     supabase.from("mood_checkins").select("mood").gte("created_at", weekAgo),
     supabase.from("emotions").select("emotion").gte("created_at", weekAgo),
     topic === "acad" || topic === "general"
@@ -80,6 +82,8 @@ export async function POST(req: Request) {
       .eq("area", topic)
       .in("type", ["consejo", "historia"])
       .limit(8),
+    // Calendario × ánimo/emociones: en Estudios y en la conversación general.
+    topic === "acad" || topic === "general" ? loadStudyPatterns(supabase, tz) : Promise.resolve(null),
   ]);
 
   const moodList = (moods ?? []).map((m) => m.mood as number);
@@ -102,7 +106,9 @@ export async function POST(req: Request) {
     displayName: profile?.display_name,
     primaryArea: (profile?.primary_area as Area | null) ?? null,
     topic,
-    userSummary,
+    userSummary: [userSummary, patterns && (patterns.upcoming14 > 0 || patterns.examMood !== null) ? describePatternsForAI(patterns) : ""]
+      .filter(Boolean)
+      .join("\n\n"),
     appContent,
   };
 

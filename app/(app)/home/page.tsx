@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { partsInTz, safeTz, daysBetween, greeting } from "@/lib/dates";
 import { AREA_INFO } from "@/config/areas";
+import { loadStudyPatterns } from "@/lib/patterns-data";
 import { Frog } from "@/components/Frog/Frog";
 import { moodFromScore } from "@/components/Frog/palette";
 import { ModuleCard } from "@/components/modules/ModuleCard";
@@ -18,9 +19,10 @@ export default async function HomePage() {
   const now = new Date();
   const local = partsInTz(now, tz);
 
-  const [{ data: lastMood }, { data: lastActivity }] = await Promise.all([
+  const [{ data: lastMood }, { data: lastActivity }, patterns] = await Promise.all([
     supabase.from("mood_checkins").select("mood, created_at").order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("activities").select("created_at").order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    loadStudyPatterns(supabase, tz),
   ]);
 
   const checkedInToday = lastMood ? partsInTz(new Date(lastMood.created_at), tz).ymd === local.ymd : false;
@@ -84,6 +86,23 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      {patterns.load === "cargada" && (
+        <aside aria-label="Semana cargada" className="flex items-center gap-3 rounded-3xl bg-warm p-4">
+          <span aria-hidden className="text-3xl">🗓️</span>
+          <div className="flex-1">
+            <p className="font-bold">Semana cargada: {patterns.upcoming7} exámenes o entregas</p>
+            <p className="text-sm">
+              {patterns.examMood !== null && patterns.otherMood !== null && patterns.otherMood - patterns.examMood >= 0.5
+                ? "Sé que estos días te pesan más. ¿Lo organizamos juntos, paso a paso?"
+                : "No hace falta hacerlo todo hoy. ¿Lo organizamos juntos?"}
+            </p>
+          </div>
+          <Link href="/chat?tema=acad" className="shrink-0 rounded-2xl bg-primary px-4 py-2 font-bold text-on-primary">
+            Vale
+          </Link>
+        </aside>
+      )}
 
       {profile.active_areas.length > 0 && (
         <nav aria-label="Tus temas" className="flex flex-wrap gap-2">

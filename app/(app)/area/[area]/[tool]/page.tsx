@@ -12,6 +12,7 @@ import { ExamCalendar, PomodoroTool, StudyMethods } from "@/components/modules/a
 import { ChallengeTool, SituationsTool, SocialSkills, VentTool } from "@/components/modules/soc";
 import { CommunicationTool, FamilyHelpNote, LimitsTool } from "@/components/modules/fam";
 import { AffirmationsTool, IdentityOrgs, SelfAcceptance } from "@/components/modules/iden";
+import { loadStudyPatterns } from "@/lib/patterns-data";
 
 export async function generateMetadata({ params }: PageProps<"/area/[area]/[tool]">): Promise<Metadata> {
   const { area, tool } = await params;
@@ -27,6 +28,7 @@ export default async function ToolPage({ params }: PageProps<"/area/[area]/[tool
   const { supabase, profile } = await requireProfile();
 
   let content: ReactNode = null;
+  let extra: ReactNode = null;
   switch (`${area}/${tool}`) {
     case "acad/calendario": {
       const today = partsInTz(new Date(), safeTz(profile.timezone)).ymd;
@@ -37,6 +39,23 @@ export default async function ToolPage({ params }: PageProps<"/area/[area]/[tool
         .order("due_date")
         .limit(50);
       content = <ExamCalendar exams={(data ?? []) as Exam[]} today={today} />;
+      const patterns = await loadStudyPatterns(supabase, safeTz(profile.timezone));
+      if (patterns.insights.length)
+        extra = (
+          <section aria-labelledby="noticed-h" className="rounded-3xl bg-surface-2 p-5">
+            <h2 id="noticed-h" className="mb-2 font-extrabold">
+              🐸 Lo que Igel ha notado
+            </h2>
+            <ul className="flex flex-col gap-2">
+              {patterns.insights.map((t) => (
+                <li key={t}>{t}</li>
+              ))}
+            </ul>
+            <Link href="/chat?tema=acad" className="mt-3 inline-block font-bold text-accent underline">
+              Hablarlo con Igel
+            </Link>
+          </section>
+        );
       break;
     }
     case "acad/pomodoro":
@@ -90,6 +109,7 @@ export default async function ToolPage({ params }: PageProps<"/area/[area]/[tool
         <span aria-hidden>{def.emoji}</span> {def.title}
       </h1>
       <div className="flex flex-col gap-4 rounded-3xl border border-line bg-surface p-5">{content}</div>
+      {extra}
     </div>
   );
 }
