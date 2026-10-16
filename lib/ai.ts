@@ -1,6 +1,7 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import type { Area } from "./types";
+import { COMMON_APPROACH, TOPIC_GUIDES, type ChatTopic } from "./companion-knowledge";
 
 /**
  * Abstracción del proveedor de IA del chat.
@@ -20,6 +21,12 @@ export interface ChatMessage {
 export interface CompanionContext {
   displayName?: string;
   primaryArea?: Area | null;
+  /** Tema de la conversación: activa la guía especializada de ese tema. */
+  topic?: ChatTopic;
+  /** Resumen de cómo ha estado la persona (sin notas privadas). */
+  userSummary?: string;
+  /** Contenido de Lagun del tema (consejos del feed) para apoyarse en él. */
+  appContent?: string;
 }
 
 export interface CompanionReply {
@@ -78,11 +85,24 @@ const AREA_HINT: Record<Area, string> = {
   iden: "identidad y autoaceptación (enfoque emocional, nada explícito)",
 };
 
+/** Parte estable del prompt: personaje + enfoque común + guía del tema. */
+function specialistPrompt(ctx: CompanionContext): string {
+  const topic = ctx.topic ?? "general";
+  return `${SYSTEM_PROMPT}\n\n${COMMON_APPROACH}\n\n${TOPIC_GUIDES[topic]}`;
+}
+
+/** Parte variable: quién es la persona y el contenido de Lagun relacionado. */
 function contextNote(ctx: CompanionContext): string {
   const parts: string[] = [];
   if (ctx.displayName) parts.push(`La persona se llama ${ctx.displayName}.`);
-  if (ctx.primaryArea) parts.push(`Lo que más le pesa últimamente suele ser ${AREA_HINT[ctx.primaryArea]}, pero no lo des por hecho.`);
-  return parts.join(" ");
+  if (ctx.primaryArea && (!ctx.topic || ctx.topic === "general"))
+    parts.push(`Lo que más le pesa últimamente suele ser ${AREA_HINT[ctx.primaryArea]}, pero no lo des por hecho.`);
+  if (ctx.userSummary) parts.push(ctx.userSummary);
+  if (ctx.appContent)
+    parts.push(
+      `CONTENIDO DE LAGUN SOBRE ESTE TEMA (puedes inspirarte en él o recomendarlo; está en el Feed):\n${ctx.appContent}`,
+    );
+  return parts.join("\n\n");
 }
 
 /**
@@ -99,7 +119,7 @@ class GroqProvider implements CompanionProvider {
     const body: Record<string, unknown> = {
       model: this.model,
       messages: [
-        { role: "system", content: note ? `${SYSTEM_PROMPT}\n\n${note}` : SYSTEM_PROMPT },
+        { role: "system", content: note ? `${specialistPrompt(context)}\n\n${note}` : specialistPrompt(context) },
         ...messages.map((m) => ({ role: m.role, content: m.content })),
       ],
       // Modo JSON: la respuesta es siempre un objeto { reply, crisis }.
@@ -138,10 +158,10 @@ class AnthropicProvider implements CompanionProvider {
       fallbacks: "default",
       system: note
         ? [
-            { type: "text", text: SYSTEM_PROMPT },
+            { type: "text", text: specialistPrompt(context) },
             { type: "text", text: note },
           ]
-        : SYSTEM_PROMPT,
+        : specialistPrompt(context),
       // Conversación breve y cálida: esfuerzo bajo = respuestas rápidas.
       output_config: {
         effort: "low",

@@ -9,6 +9,7 @@ import type { FrogState } from "@/lib/types";
 import { Frog } from "@/components/Frog/Frog";
 import { CrisisSheet } from "@/components/ui/CrisisSheet";
 import { inputClass } from "@/components/ui/Field";
+import { TOPIC_LABELS, type ChatTopic } from "@/lib/companion-knowledge";
 
 interface Msg {
   id: number;
@@ -21,13 +22,25 @@ interface Msg {
  * Nada en localStorage, sessionStorage, IndexedDB ni base de datos.
  * Se borra al cerrar, al salir de la pantalla y al ocultar/cerrar la página.
  */
-export function ChatClient({ name, resources, frogState }: { name: string; resources: CountryResources; frogState: FrogState }) {
+export function ChatClient({
+  name,
+  resources,
+  frogState,
+  initialTopic,
+}: {
+  name: string;
+  resources: CountryResources;
+  frogState: FrogState;
+  initialTopic: ChatTopic;
+}) {
   const router = useRouter();
-  const greeting: Msg = {
+  const [topic, setTopic] = useState<ChatTopic>(initialTopic);
+  const greetingFor = (t: ChatTopic): Msg => ({
     id: 0,
     role: "assistant",
-    content: `Hola, ${name} 🐸 Soy Igel. Aquí puedes contarme lo que quieras, sin juicios. ¿Cómo estás ahora mismo?`,
-  };
+    content: `Hola, ${name} 🐸 Soy Igel. ${TOPIC_LABELS[t].greeting}`,
+  });
+  const greeting = greetingFor(topic);
   const [messages, setMessages] = useState<Msg[]>([greeting]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -96,7 +109,10 @@ export function ChatClient({ name, resources, frogState }: { name: string; resou
         cache: "no-store",
         signal: controller.current.signal,
         // El saludo inicial es local: no se envía.
-        body: JSON.stringify({ messages: history.filter((m) => m.id !== 0).map(({ role, content }) => ({ role, content })) }),
+        body: JSON.stringify({
+          topic,
+          messages: history.filter((m) => m.id !== 0).map(({ role, content }) => ({ role, content })),
+        }),
       });
       const data = (await res.json()) as { reply?: string; crisis?: boolean };
       setMessages((m) => [
@@ -132,6 +148,27 @@ export function ChatClient({ name, resources, frogState }: { name: string; resou
 
   return (
     <div className="flex min-h-[calc(100dvh-13rem)] flex-col">
+      <div role="radiogroup" aria-label="Tema de la conversación" className="-mx-1 mb-3 flex gap-2 overflow-x-auto px-1 pb-1">
+        {(Object.keys(TOPIC_LABELS) as ChatTopic[]).map((t) => (
+          <button
+            key={t}
+            type="button"
+            role="radio"
+            aria-checked={topic === t}
+            onClick={() => {
+              setTopic(t);
+              // Si aún no has escrito nada, Igel te saluda según el tema.
+              setMessages((m) => (m.some((x) => x.role === "user") ? m : [greetingFor(t)]));
+            }}
+            className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-bold ${
+              topic === t ? "bg-primary text-on-primary" : "bg-surface text-fg"
+            }`}
+          >
+            <span aria-hidden>{TOPIC_LABELS[t].emoji}</span> {TOPIC_LABELS[t].label}
+          </button>
+        ))}
+      </div>
+
       <div className="mb-3 flex items-start gap-3 rounded-2xl bg-surface p-3 text-sm">
         <span aria-hidden className="text-xl">🔒</span>
         <p>
