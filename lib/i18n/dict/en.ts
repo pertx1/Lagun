@@ -70,8 +70,8 @@ export const en: Dict = {
 
   landing: {
     frogAria: "Igel the frog says hi",
-    tagline: "Your corner for when studies, people, home or your feelings get too much.",
-    taglineStrong: "Come in whenever you want, no streaks, no pressure.",
+    tagline: "What you feel matters.",
+    taglineStrong: "This is your space.",
     features: ["Emotion jar", "Someone who listens", "Breathe and calm down", "Igel, a frog who keeps you company"],
     start: "Get started",
     haveAccount: "I already have an account",

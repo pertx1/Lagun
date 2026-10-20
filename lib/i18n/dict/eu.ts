@@ -70,8 +70,8 @@ export const eu: Dict = {
 
   landing: {
     frogAria: "Igel igelak agurtzen zaitu",
-    tagline: "Zure txokoa ikasketak, jendea, etxea edo sentitzen duzuna gehiegi denerako.",
-    taglineStrong: "Sartu nahi duzunean, bolada eta presiorik gabe.",
+    tagline: "Sentitzen duzuna garrantzitsua da.",
+    taglineStrong: "Hemen duzu zure espazioa.",
     features: ["Emozioen pitxerra", "Entzuten zaituen norbait", "Arnasa hartu eta lasaitu", "Igel, laguntzen zaituen igel bat"],
     start: "Hasi",
     haveAccount: "Badut kontua",

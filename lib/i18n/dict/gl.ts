@@ -70,8 +70,8 @@ export const gl: Dict = {
 
   landing: {
     frogAria: "A ra Igel saúdate",
-    tagline: "O teu recuncho para cando os estudos, a xente, a casa ou o que sentes se fai bóla.",
-    taglineStrong: "Entra cando queiras, sen rachas nin presión.",
+    tagline: "O que sentes importa.",
+    taglineStrong: "Aquí tes o teu espazo.",
     features: ["Xerra de emocións", "Alguén que te escoita", "Respirar e calmarte", "Igel, unha ra que te acompaña"],
     start: "Comezar",
     haveAccount: "Xa teño conta",

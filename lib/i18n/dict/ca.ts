@@ -70,8 +70,8 @@ export const ca: Dict = {
 
   landing: {
     frogAria: "La granota Igel et saluda",
-    tagline: "El teu racó per quan els estudis, la gent, la casa o el que sents se't fa una bola.",
-    taglineStrong: "Entra quan vulguis, sense ratxes ni pressió.",
+    tagline: "El que sents importa.",
+    taglineStrong: "Aquí tens el teu espai.",
     features: ["Gerra d'emocions", "Algú que t'escolta", "Respirar i calmar-te", "Igel, una granota que t'acompanya"],
     start: "Començar",
     haveAccount: "Ja tinc compte",

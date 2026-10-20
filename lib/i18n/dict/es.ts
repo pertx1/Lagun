@@ -81,8 +81,8 @@ export const es = {
 
   landing: {
     frogAria: "Igel, la rana, te saluda",
-    tagline: "Tu rincón para cuando los estudios, la gente, la casa o lo que sientes se hace bola.",
-    taglineStrong: "Entra cuando quieras, sin rachas ni presión.",
+    tagline: "Lo que sientes importa.",
+    taglineStrong: "Aquí tienes tu espacio.",
     features: ["Jarra de emociones", "Alguien que te escucha", "Respirar y calmarte", "Igel, una rana que te acompaña"],
     start: "Empezar",
     haveAccount: "Ya tengo cuenta",
