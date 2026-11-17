@@ -16,6 +16,10 @@ function supabaseConfigured() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 }
 
+function missingVars() {
+  return ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"].filter((k) => !process.env[k]).join(", ");
+}
+
 /** Cliente admin solo si hay service role; sin ella se usa el registro normal. */
 function adminOrNull() {
   return process.env.SUPABASE_SERVICE_ROLE_KEY ? createAdminClient() : null;
@@ -27,7 +31,8 @@ function explain(where: string, err: { message?: string; code?: string; status?:
   const text = `${err.code ?? ""} ${err.message ?? ""}`;
   if (/already|registered|exists/i.test(text)) return e.taken;
   if (/database error|relation .* does not exist|profiles/i.test(text)) return e.database;
-  if (/invalid api key|fetch failed|ENOTFOUND|no api key/i.test(text)) return e.config;
+  if (/invalid api key|no api key/i.test(text)) return `${e.config} (clave no válida)`;
+  if (/fetch failed|ENOTFOUND/i.test(text)) return `${e.config} (no responde la URL)`;
   return `${e.generic} (${err.code ?? err.message ?? "error"})`;
 }
 
@@ -37,7 +42,7 @@ export async function login(_: FormState, form: FormData): Promise<FormState> {
   const { t } = await getI18n();
   const e = t.auth.errors;
   if (!username || !password) return { error: e.missing };
-  if (!supabaseConfigured()) return { error: e.config };
+  if (!supabaseConfigured()) return { error: `${e.config} (${missingVars()})` };
 
   const email = usernameToAuthEmail(username);
   const supabase = await createClient();
@@ -74,7 +79,7 @@ export async function register(_: FormState, form: FormData): Promise<FormState>
   if (!isValidUsername(username)) return { error: e.username };
   if (password.length < 8) return { error: e.password };
   if (!ageConsent) return { error: e.consent };
-  if (!supabaseConfigured()) return { error: e.config };
+  if (!supabaseConfigured()) return { error: `${e.config} (${missingVars()})` };
 
   const email = usernameToAuthEmail(username);
   const metadata = { username, age_consent: true, timezone, locale };
