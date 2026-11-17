@@ -60,7 +60,7 @@ npx web-push generate-vapid-keys   # copia las claves a .env.local
 | Variable | Dónde se usa |
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Cliente y servidor |
-| `SUPABASE_SERVICE_ROLE_KEY` | **Solo servidor**: cron de notificaciones y borrado de cuenta |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Solo servidor**: crear cuentas ya confirmadas, cron de notificaciones y borrado de cuenta |
 | `GROQ_API_KEY`, `AI_PROVIDER`, `AI_MODEL` | **Solo servidor**: chat (`lib/ai.ts`). Clave gratis en [console.groq.com/keys](https://console.groq.com/keys) |
 | `AUTH_EMAIL_DOMAIN` | Dominio técnico del email interno de Supabase (no se envían correos) |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Web Push |

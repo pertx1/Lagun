@@ -110,6 +110,8 @@ export const eu: Dict = {
       taken: "Erabiltzaile-izen hori hartuta dago. Saiatu beste batekin.",
       generic: "Ezin izan dugu kontua sortu. Saiatu berriro.",
       noSession: "Kontua sortu da, baina ezin izan da saioa hasi. Saiatu sartzen.",
+      config: "Aplikazioa ez dago ondo konektatuta datu-basearekin. Berrikusi Supabaseren aldagaiak Vercelen.",
+      database: "Datu-basea prestatu behar da: exekutatu Supabaseren migrazioak.",
     },
   },
 

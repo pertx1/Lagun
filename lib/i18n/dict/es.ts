@@ -121,6 +121,8 @@ export const es = {
       taken: "Ese nombre de usuario ya está cogido. Prueba con otro.",
       generic: "No hemos podido crear la cuenta. Inténtalo de nuevo.",
       noSession: "La cuenta se ha creado, pero no se ha podido iniciar sesión. Prueba a entrar.",
+      config: "La app no está bien conectada con la base de datos. Revisa las variables de Supabase en Vercel.",
+      database: "Falta preparar la base de datos: ejecuta las migraciones de Supabase.",
     },
   },
 

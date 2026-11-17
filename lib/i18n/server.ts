@@ -6,7 +6,8 @@ import { DICTS, isLocale, LOCALE_COOKIE, matchAcceptLanguage, type Locale } from
 
 /** Idioma de la petición: perfil → cookie → navegador → castellano. */
 export const getLocale = cache(async (): Promise<Locale> => {
-  const { profile } = await getSession();
+  // Sin Supabase configurado no hay perfil, pero la página tiene que cargar igual.
+  const { profile } = process.env.NEXT_PUBLIC_SUPABASE_URL ? await getSession() : { profile: null };
   const fromProfile = (profile as { locale?: string } | null)?.locale;
   if (isLocale(fromProfile)) return fromProfile;
   const fromCookie = (await cookies()).get(LOCALE_COOKIE)?.value;

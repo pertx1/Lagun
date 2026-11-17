@@ -110,6 +110,8 @@ export const ca: Dict = {
       taken: "Aquest nom d'usuari ja està agafat. Prova'n un altre.",
       generic: "No hem pogut crear el compte. Torna-ho a provar.",
       noSession: "El compte s'ha creat, però no s'ha pogut iniciar la sessió. Prova d'entrar.",
+      config: "L'app no està ben connectada amb la base de dades. Revisa les variables de Supabase a Vercel.",
+      database: "Cal preparar la base de dades: executa les migracions de Supabase.",
     },
   },
 

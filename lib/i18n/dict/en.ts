@@ -110,6 +110,8 @@ export const en: Dict = {
       taken: "That username is already taken. Try another one.",
       generic: "We couldn't create your account. Please try again.",
       noSession: "Your account was created, but we couldn't log you in. Try logging in.",
+      config: "The app is not connected to the database. Check the Supabase variables in Vercel.",
+      database: "The database is not set up yet: run the Supabase migrations.",
     },
   },
 

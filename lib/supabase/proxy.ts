@@ -6,6 +6,9 @@ const PROTECTED = ["/home", "/area", "/chat", "/jarra", "/feed", "/stats", "/sho
 /** Refresca la sesión en cada petición y protege las rutas privadas. */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
+  // Sin variables de Supabase no se tumba toda la web: las páginas públicas
+  // cargan y el login explica qué falta.
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return response;
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

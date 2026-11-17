@@ -110,6 +110,8 @@ export const gl: Dict = {
       taken: "Ese nome de usuario xa está collido. Proba con outro.",
       generic: "Non puidemos crear a conta. Téntao de novo.",
       noSession: "A conta creouse, pero non se puido iniciar sesión. Proba a entrar.",
+      config: "A app non está ben conectada coa base de datos. Revisa as variables de Supabase en Vercel.",
+      database: "Falta preparar a base de datos: executa as migracións de Supabase.",
     },
   },
 
