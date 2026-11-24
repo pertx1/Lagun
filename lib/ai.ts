@@ -1,5 +1,6 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
+import { getVercelOidcToken } from "@vercel/oidc";
 import type { Area } from "./types";
 import { COMMON_APPROACH, TOPIC_GUIDES, type ChatTopic } from "./companion-knowledge";
 
@@ -9,7 +10,8 @@ import { COMMON_APPROACH, TOPIC_GUIDES, type ChatTopic } from "./companion-knowl
  * - Por defecto usa **Groq** (plan gratuito, sin tarjeta; no entrena con los datos de la API).
  * - Solo se importa en el servidor (`server-only`): la API key nunca llega al cliente.
  * - Para cambiar de proveedor, implementa otro `CompanionProvider` y
- *   selecciónalo con la variable de entorno AI_PROVIDER ("groq" | "anthropic").
+ *   selecciónalo con la variable de entorno AI_PROVIDER ("groq" | "gateway" | "anthropic"); sin ella usa Groq si hay
+ *   GROQ_API_KEY y, si no, el AI Gateway de Vercel.
  * - No se registra (log) ni se guarda el contenido de las conversaciones.
  */
 
@@ -112,15 +114,23 @@ function contextNote(ctx: CompanionContext): string {
 }
 
 /**
- * Groq: API compatible con OpenAI, plan gratuito con límites por minuto/día.
- * Modelo configurable con AI_MODEL (el catálogo de Groq cambia; consulta console.groq.com/docs/models).
+ * Proveedores con API compatible con OpenAI:
+ *  - Groq: plan gratuito, necesita GROQ_API_KEY.
+ *  - Vercel AI Gateway: dentro de Vercel se autentica solo (OIDC), sin claves;
+ *    fuera de Vercel usa AI_GATEWAY_API_KEY. Tiene crédito gratuito mensual.
+ * Modelo configurable con AI_MODEL.
  */
-class GroqProvider implements CompanionProvider {
+class OpenAICompatibleProvider implements CompanionProvider {
   private model = process.env.AI_MODEL || "openai/gpt-oss-120b";
 
+  constructor(
+    private name: string,
+    private url: string,
+    private getKey: () => Promise<string>,
+  ) {}
+
   async reply(messages: ChatMessage[], context: CompanionContext): Promise<CompanionReply> {
-    const key = process.env.GROQ_API_KEY;
-    if (!key) throw new Error("GROQ_API_KEY no configurada");
+    const key = await this.getKey();
     const note = contextNote(context);
     const body: Record<string, unknown> = {
       model: this.model,
@@ -136,17 +146,31 @@ class GroqProvider implements CompanionProvider {
     // Los modelos gpt-oss razonan antes de responder: poco razonamiento = respuestas rápidas.
     if (this.model.startsWith("openai/gpt-oss")) body.reasoning_effort = "low";
 
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const res = await fetch(this.url, {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify(body),
       cache: "no-store",
       signal: AbortSignal.timeout(30_000),
     });
-    if (!res.ok) throw new Error(`Groq ${res.status}`);
+    if (!res.ok) throw new Error(`${this.name} ${res.status}`);
     const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
     return parseStructured(data.choices?.[0]?.message?.content ?? "");
   }
+}
+
+function groqProvider() {
+  return new OpenAICompatibleProvider("Groq", "https://api.groq.com/openai/v1/chat/completions", async () => {
+    const key = process.env.GROQ_API_KEY;
+    if (!key) throw new Error("GROQ_API_KEY no configurada");
+    return key;
+  });
+}
+
+function gatewayProvider() {
+  return new OpenAICompatibleProvider("AI Gateway", "https://ai-gateway.vercel.sh/v1/chat/completions", async () => {
+    return process.env.AI_GATEWAY_API_KEY || (await getVercelOidcToken());
+  });
 }
 
 /** Alternativa de pago (Claude). Se activa con AI_PROVIDER=anthropic y ANTHROPIC_API_KEY. */
@@ -207,10 +231,14 @@ let provider: CompanionProvider | null = null;
 
 export function getCompanion(): CompanionProvider {
   if (provider) return provider;
-  const name = (process.env.AI_PROVIDER || "groq").toLowerCase();
+  // Sin AI_PROVIDER: Groq si hay clave; si no, el AI Gateway de Vercel.
+  const name = (process.env.AI_PROVIDER || (process.env.GROQ_API_KEY ? "groq" : "gateway")).toLowerCase();
   switch (name) {
     case "groq":
-      provider = new GroqProvider();
+      provider = groqProvider();
+      break;
+    case "gateway":
+      provider = gatewayProvider();
       break;
     case "anthropic":
       provider = new AnthropicProvider();
