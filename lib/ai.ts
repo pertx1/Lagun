@@ -153,7 +153,10 @@ class OpenAICompatibleProvider implements CompanionProvider {
       cache: "no-store",
       signal: AbortSignal.timeout(30_000),
     });
-    if (!res.ok) throw new Error(`${this.name} ${res.status}`);
+    if (!res.ok) {
+      const detail = (await res.text().catch(() => "")).slice(0, 200);
+      throw new Error(`${this.name} ${res.status} ${detail}`);
+    }
     const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
     return parseStructured(data.choices?.[0]?.message?.content ?? "");
   }

@@ -130,8 +130,9 @@ export async function POST(req: Request) {
     const out = await getCompanion().reply(history, context);
     reply = out.reply;
     modelCrisis = out.crisis;
-  } catch {
-    // Sin registrar el contenido. Seguimos con una respuesta segura.
+  } catch (err) {
+    // Solo se registra el tipo de error, nunca el contenido de la conversación.
+    console.error("[chat] proveedor de IA:", err instanceof Error ? err.message : "error");
     reply = "";
   }
 
